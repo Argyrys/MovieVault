@@ -32,10 +32,10 @@ function recordSuccess(id) {
 }
 
 const DEFAULT_CONFIGS = [
+  { id: 'vidnest', name: 'VidNest', type: 'embed', priority: 15 },
   { id: 'vidlink', name: 'VidLink', type: 'embed', priority: 20 },
   { id: 'vidfast', name: 'VidFast', type: 'embed', priority: 30 },
   { id: 'autoembed', name: 'AutoEmbed', type: 'embed', priority: 40 },
-  { id: 'vidnest', name: 'VidNest', type: 'embed', priority: 45 },
 ];
 
 async function getProviderConfigs() {
