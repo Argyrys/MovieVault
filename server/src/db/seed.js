@@ -35,6 +35,7 @@ const PROVIDERS = [
   { id: 'vidfast', name: 'VidFast', type: 'embed', priority: 30 },
   { id: 'autoembed', name: 'AutoEmbed', type: 'embed', priority: 40 },
   { id: 'vidnest', name: 'VidNest', type: 'embed', priority: 15 },
+  { id: 'vidzee', name: 'VidZee', type: 'direct', priority: 17 },
   { id: 'vixsrc', name: 'VixSrc (direct)', type: 'direct', priority: 50 },
 ];
 
