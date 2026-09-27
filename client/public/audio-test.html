@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>MovieVault audio test</title>
+    <style>
+      body { background: #0a0a0b; color: #f5d78e; font-family: monospace; padding: 40px; font-size: 20px; }
+      div { margin: 14px 0; }
+      button { font-size: 22px; padding: 16px 34px; border-radius: 999px; border: 1px solid #e5b45c;
+        background: rgba(229,180,92,.15); color: #f5d78e; font-weight: 700; cursor: pointer; }
+      .ok { color: #7CFC00; } .bad { color: #ff6b6b; }
+    </style>
+  </head>
+  <body>
+    <h1>MovieVault audio diagnostics</h1>
+    <p>1. Click the button — you should hear a two-note "ta-dum".</p>
+    <button id="beep">🔊 Play test sound</button>
+    <p>2. Levels below update live while the intro score plays.</p>
+    <div>intro audio state: <span id="state">?</span></div>
+    <div>live peak level: <span id="peak">?</span></div>
+    <div>verdict: <span id="verdict">?</span></div>
+    <script type="module">
+      import { ensureIntroAudio, introAudioState, introAudioPeak } from '/src/lib/introAudio.js';
+
+      ensureIntroAudio();
+      setInterval(() => ensureIntroAudio(), 300);
+
+      const peaks = [];
+      setInterval(() => peaks.push(introAudioPeak()), 200);
+
+      document.getElementById('beep').addEventListener('click', () => {
+        const ctx = ensureIntroAudio();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(660, now);
+        o.frequency.setValueAtTime(880, now + 0.25);
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.exponentialRampToValueAtTime(0.5, now + 0.03);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
+        o.connect(g).connect(ctx.destination);
+        o.start(now);
+        o.stop(now + 0.7);
+      });
+
+      setInterval(() => {
+        const max = Math.max(...peaks, 0);
+        document.getElementById('state').textContent = introAudioState();
+        document.getElementById('peak').textContent = max.toFixed(4);
+        const v = document.getElementById('verdict');
+        if (max > 0.01) {
+          v.textContent = 'AUDIO OK — signal detected';
+          v.className = 'ok';
+        } else if (introAudioState() === 'running') {
+          v.textContent = 'context running, waiting for signal…';
+          v.className = '';
+        } else {
+          v.textContent = 'blocked — click the button to unlock';
+          v.className = 'bad';
+        }
+      }, 300);
+    </script>
+  </body>
+</html>

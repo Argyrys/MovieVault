@@ -1,0 +1,272 @@
+.watch {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 86px 24px 40px;
+}
+
+.watch-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.watch-back {
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.watch-back:hover {
+  color: var(--accent);
+}
+
+.watch-trailer {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.watch-trailer:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.watch-stage {
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.watch-panels {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 26px;
+  margin-top: 24px;
+  align-items: start;
+}
+
+.watch-info h1 {
+  font-family: var(--font-display);
+  font-size: clamp(24px, 3.5vw, 38px);
+  margin: 0 0 6px;
+}
+
+.watch-eplabel {
+  color: var(--accent);
+  font-weight: 600;
+  margin: 0 0 18px;
+}
+
+.server-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+.server-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.server-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.server-chip small {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.server-chip:hover {
+  border-color: var(--accent);
+}
+
+.server-chip.active {
+  background: var(--accent);
+  color: #14100a;
+  border-color: var(--accent);
+}
+
+.server-chip.active small {
+  color: rgba(20, 16, 10, 0.7);
+}
+
+.server-empty {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.ep-nav {
+  margin-bottom: 18px;
+}
+
+.season-select {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.season-select label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.season-select select {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 9px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+}
+
+.season-select select:focus {
+  border-color: var(--accent);
+}
+
+.ep-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.ep-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 14px;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ep-card:hover {
+  border-color: var(--accent);
+}
+
+.ep-card.active {
+  background: rgba(229, 180, 92, 0.12);
+  border-color: var(--accent);
+}
+
+.ep-num {
+  font-weight: 800;
+  color: var(--accent);
+  min-width: 22px;
+}
+
+.ep-title {
+  font-size: 13.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ep-controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ep-controls button {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 9px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.ep-controls button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.ep-controls button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.ep-overview {
+  color: var(--text-muted);
+  font-size: 14.5px;
+  line-height: 1.65;
+  max-width: 760px;
+}
+
+.watch-side {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.watch-side h3 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+
+.watch-side > p {
+  margin: 0 0 14px;
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.watch-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 13.5px;
+  color: var(--text-muted);
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+
+.watch-note {
+  color: var(--text-muted);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+@media (max-width: 900px) {
+  .watch-panels {
+    grid-template-columns: 1fr;
+  }
+}

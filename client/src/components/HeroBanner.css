@@ -1,0 +1,130 @@
+.hero {
+  position: relative;
+  min-height: 88vh;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center 20%;
+  transform: scale(1.04);
+  animation: heroZoom 26s ease-in-out infinite alternate;
+}
+
+@keyframes heroZoom {
+  from {
+    transform: scale(1.04);
+  }
+  to {
+    transform: scale(1.13);
+  }
+}
+
+.hero-fade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(10, 10, 11, 0.95) 0%, rgba(10, 10, 11, 0.55) 45%, rgba(10, 10, 11, 0.1) 75%),
+    linear-gradient(0deg, var(--bg) 0%, rgba(10, 10, 11, 0.4) 30%, transparent 60%);
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: var(--content-max);
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 24px 9vh;
+}
+
+.hero-kind {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--accent);
+  border: 1px solid rgba(229, 180, 92, 0.5);
+  padding: 4px 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 6.5vw, 76px);
+  line-height: 1.02;
+  margin: 0 0 10px;
+  max-width: 720px;
+  letter-spacing: 0.5px;
+  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.6);
+}
+
+.hero-tagline {
+  color: var(--accent);
+  font-style: italic;
+  margin: 0 0 14px;
+  font-size: 16px;
+}
+
+.hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.hero-score {
+  color: var(--accent-bright);
+}
+
+.hero-genre {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border);
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.hero-overview {
+  max-width: 560px;
+  color: rgba(245, 245, 247, 0.85);
+  font-size: 16px;
+  line-height: 1.6;
+  margin: 0 0 26px;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+}
+
+.hero-actions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.btn-trailer {
+  background: rgba(229, 180, 92, 0.14) !important;
+  border: 1px solid rgba(229, 180, 92, 0.45);
+  color: var(--accent-bright);
+}
+
+@media (max-width: 640px) {
+  .hero {
+    min-height: 78vh;
+  }
+
+  .hero-content {
+    padding-bottom: 6vh;
+  }
+
+  .hero-overview {
+    font-size: 14px;
+  }
+}

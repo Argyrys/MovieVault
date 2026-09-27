@@ -1,0 +1,140 @@
+.intro-lock {
+  overflow: hidden;
+}
+
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #000;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: opacity 0.7s ease, visibility 0.7s ease;
+}
+
+.intro--out {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.intro-stage {
+  text-align: center;
+}
+
+.intro-word {
+  position: relative;
+  display: inline-flex;
+  overflow: hidden;
+  padding: 0 6px;
+}
+
+.intro-letter {
+  font-family: var(--font-display);
+  font-size: clamp(42px, 11vw, 120px);
+  font-weight: 900;
+  letter-spacing: 2px;
+  background: linear-gradient(180deg, #f5d78e 0%, #e5b45c 55%, #9a7229 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  opacity: 0;
+  transform: scale(0.6) translateY(18px);
+  filter: blur(10px);
+  animation: introLetterIn 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.intro-sweep {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  left: -50%;
+  background: linear-gradient(105deg, transparent 0%, rgba(255, 255, 255, 0.55) 50%, transparent 100%);
+  transform: skewX(-18deg);
+  animation: introSweep 1.1s ease-in-out 2s forwards;
+  pointer-events: none;
+}
+
+.intro-tag {
+  margin-top: 14px;
+  font-size: clamp(11px, 1.6vw, 15px);
+  letter-spacing: 8px;
+  color: rgba(245, 245, 247, 0.65);
+  opacity: 0;
+  animation: introTagIn 0.7s ease 1.8s forwards;
+}
+
+.intro-skip {
+  position: absolute;
+  bottom: 32px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 13px;
+  letter-spacing: 1px;
+  opacity: 0;
+  animation: introTagIn 0.5s ease 2.8s forwards;
+}
+
+.intro-sound {
+  position: absolute;
+  bottom: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(229, 180, 92, 0.14);
+  border: 1px solid rgba(229, 180, 92, 0.55);
+  color: var(--accent-bright);
+  padding: 13px 30px;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 700;
+  animation: soundPulse 1.6s ease-in-out infinite;
+}
+
+.intro-sound:hover {
+  background: rgba(229, 180, 92, 0.3);
+}
+
+@keyframes soundPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(229, 180, 92, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(229, 180, 92, 0);
+  }
+}
+
+@keyframes introLetterIn {
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes introSweep {
+  to {
+    left: 120%;
+  }
+}
+
+@keyframes introTagIn {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Reduced motion: simple fade of the full wordmark, no per-letter animation */
+.intro--reduced .intro-letter {
+  animation: introLetterIn 0.4s ease forwards;
+  transform: none;
+  filter: none;
+}
+
+.intro--reduced .intro-sweep,
+.intro--reduced .intro-skip {
+  display: none;
+}

@@ -1,0 +1,90 @@
+.sk-hero,
+.sk-detail {
+  padding: 140px 24px 40px;
+  max-width: var(--content-max);
+  margin: 0 auto;
+}
+
+.sk-detail {
+  padding-top: 110px;
+}
+
+.sk-line {
+  height: 16px;
+  border-radius: 6px;
+  margin-bottom: 14px;
+}
+
+.sk-h-title {
+  height: 54px;
+}
+
+.sk-h-label {
+  height: 22px;
+}
+
+.sk-w20 { width: 20%; }
+.sk-w30 { width: 30%; }
+.sk-w40 { width: 40%; }
+.sk-w50 { width: 50%; }
+.sk-w60 { width: 60%; }
+.sk-w80 { width: 80%; }
+.sk-w90 { width: 90%; }
+
+.sk-btns {
+  display: flex;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.sk-chip {
+  width: 140px;
+  height: 46px;
+  border-radius: var(--radius);
+}
+
+.sk-card {
+  flex: 0 0 auto;
+  width: 168px;
+  aspect-ratio: 2 / 3;
+  border-radius: var(--radius);
+}
+
+.sk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 20px;
+  padding: 0 24px;
+  max-width: var(--content-max);
+  margin: 0 auto;
+}
+
+.sk-grid .sk-card {
+  width: 100%;
+}
+
+.sk-hero .sk-line,
+.sk-detail .sk-line,
+.sk-card,
+.sk-chip {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-surface);
+}
+
+.sk-hero .sk-line::after,
+.sk-detail .sk-line::after,
+.sk-card::after,
+.sk-chip::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent);
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}

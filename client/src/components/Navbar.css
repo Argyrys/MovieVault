@@ -1,0 +1,249 @@
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: linear-gradient(180deg, rgba(10, 10, 11, 0.9) 0%, rgba(10, 10, 11, 0) 100%);
+  transition: background 0.3s ease, border-color 0.3s ease;
+  border-bottom: 1px solid transparent;
+}
+
+.navbar--scrolled {
+  background: rgba(10, 10, 11, 0.94);
+  backdrop-filter: blur(12px);
+  border-bottom-color: var(--border);
+}
+
+.navbar-inner {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 800;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--accent-gradient);
+  color: #14100a;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  box-shadow: var(--accent-glow);
+}
+
+.brand-name {
+  font-size: 20px;
+  letter-spacing: 0.4px;
+}
+
+.brand-accent {
+  color: var(--accent);
+}
+
+.nav-links {
+  display: flex;
+  gap: 22px;
+}
+
+.nav-links a {
+  color: rgba(245, 245, 247, 0.75);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+  color: var(--text);
+}
+
+.nav-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.nav-search {
+  position: relative;
+}
+
+.nav-search input {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text);
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  width: 210px;
+  outline: none;
+  transition: border-color 0.2s ease, width 0.25s ease, background 0.2s ease;
+}
+
+.nav-search input:focus {
+  border-color: var(--accent);
+  width: 270px;
+  background: rgba(10, 10, 11, 0.9);
+}
+
+.nav-sug {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 340px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  animation: sugIn 0.16s ease;
+}
+
+@keyframes sugIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+.nav-sug-item {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  text-align: left;
+  color: var(--text);
+}
+
+.nav-sug-item:hover {
+  background: var(--bg-hover);
+}
+
+.nav-sug-item img {
+  width: 40px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 4px;
+  background: var(--bg-surface);
+}
+
+.nav-sug-item span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.nav-sug-item strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.nav-sug-item small {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.nav-sug-all {
+  width: 100%;
+  padding: 11px;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.nav-sug-all:hover {
+  background: rgba(229, 180, 92, 0.08);
+}
+
+.nav-burger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  padding: 6px;
+}
+
+.nav-burger span {
+  width: 22px;
+  height: 2px;
+  background: var(--text);
+  border-radius: 2px;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.navbar--menu .nav-burger span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.navbar--menu .nav-burger span:nth-child(2) {
+  opacity: 0;
+}
+
+.navbar--menu .nav-burger span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+@media (max-width: 900px) {
+  .nav-burger {
+    display: flex;
+  }
+
+  .nav-links {
+    position: fixed;
+    top: 68px;
+    left: 0;
+    right: 0;
+    background: rgba(10, 10, 11, 0.98);
+    flex-direction: column;
+    padding: 18px 24px 26px;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+    transform: translateY(-130%);
+    transition: transform 0.3s var(--ease);
+  }
+
+  .nav-links--open {
+    transform: translateY(0);
+  }
+
+  .nav-links a {
+    padding: 12px 4px;
+    font-size: 16px;
+  }
+
+  .nav-search input {
+    width: 150px;
+  }
+
+  .nav-search input:focus {
+    width: 180px;
+  }
+
+  .nav-sug {
+    width: min(320px, calc(100vw - 48px));
+  }
+}
