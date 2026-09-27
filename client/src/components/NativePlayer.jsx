@@ -112,9 +112,24 @@ export default function NativePlayer({ src, poster, storageKey }) {
     };
     video.addEventListener('timeupdate', onTime);
 
+    // audio must never start muted; if the browser blocks audible autoplay,
+    // the first click anywhere starts it with sound
+    video.muted = false;
+    video.volume = 1;
+    const onFirstGesture = () => {
+      if (video.paused) {
+        video.muted = false;
+        video.volume = 1;
+        video.play().catch(() => {});
+      }
+      document.removeEventListener('pointerdown', onFirstGesture);
+    };
+    document.addEventListener('pointerdown', onFirstGesture);
+
     return () => {
       cancelled = true;
       video.removeEventListener('timeupdate', onTime);
+      document.removeEventListener('pointerdown', onFirstGesture);
       if (video.audioTracks) {
         video.audioTracks.removeEventListener('change', onNativeChange);
         video.audioTracks.removeEventListener('addtrack', onNativeChange);
