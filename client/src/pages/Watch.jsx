@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api.js';
+import { langName } from '../lib/format.js';
 import NativePlayer from '../components/NativePlayer.jsx';
 import EmbedPlayer from '../components/EmbedPlayer.jsx';
 import TrailerModal from '../components/TrailerModal.jsx';
@@ -217,10 +218,13 @@ export default function Watch() {
               <span>Server: {selected.name}</span>
               <span>Type: {selected.kind === 'embed' ? 'Embed player' : 'Direct stream'}</span>
               {selected.quality && <span>Quality: {selected.quality}</span>}
+              {detail?.original_language && <span>Original audio: {langName(detail.original_language)}</span>}
             </div>
           )}
           <p className="watch-note">
             Playback is provided by third-party servers. If one fails, switch servers above.
+            {selected?.kind === 'embed' &&
+              ' For embed players, audio/language options (when offered) are inside the player\u2019s own menu.'}
           </p>
         </aside>
       </div>

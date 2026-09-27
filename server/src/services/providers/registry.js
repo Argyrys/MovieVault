@@ -4,8 +4,9 @@ import vidsrc from './vidsrc.js';
 import vidlink from './vidlink.js';
 import autoembed from './autoembed.js';
 import vidfast from './vidfast.js';
+import vidnest from './vidnest.js';
 
-const MODULES = { vidsrc, vidlink, autoembed, vidfast };
+const MODULES = { vidsrc, vidlink, autoembed, vidfast, vidnest };
 
 const configCache = new NodeCache({ stdTTL: 60, useClones: false });
 const streamCache = new NodeCache({ stdTTL: 1800, useClones: false });
@@ -30,12 +31,25 @@ function recordSuccess(id) {
   failures.delete(id);
 }
 
+const DEFAULT_CONFIGS = [
+  { id: 'vidlink', name: 'VidLink', type: 'embed', priority: 20 },
+  { id: 'vidfast', name: 'VidFast', type: 'embed', priority: 30 },
+  { id: 'autoembed', name: 'AutoEmbed', type: 'embed', priority: 40 },
+  { id: 'vidnest', name: 'VidNest', type: 'embed', priority: 45 },
+];
+
 async function getProviderConfigs() {
   const cached = configCache.get('configs');
   if (cached) return cached;
-  const rows = await many(
-    `SELECT id, name, type, priority FROM providers WHERE enabled = TRUE ORDER BY priority ASC`
-  );
+  let rows;
+  try {
+    rows = await many(
+      `SELECT id, name, type, priority FROM providers WHERE enabled = TRUE ORDER BY priority ASC`
+    );
+  } catch (err) {
+    console.warn(`[providers] DB unavailable, using defaults: ${err.message}`);
+    rows = DEFAULT_CONFIGS;
+  }
   const configs = rows.filter((r) => MODULES[r.id]);
   const missing = rows.filter((r) => !MODULES[r.id]).map((r) => r.id);
   if (missing.length) console.warn(`[providers] enabled but no module: ${missing.join(', ')}`);

@@ -2,14 +2,15 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Readable } from 'node:stream';
-import { pipeline } from 'node:stream/promises';
 import { Router } from 'express';
 import { env } from '../config/env.js';
 import { asyncHandler } from '../middleware/errors.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CACHE_DIR = path.resolve(__dirname, '../../media-cache/images');
+// Vercel serverless: root FS is read-only, /tmp is writable
+const CACHE_DIR = process.env.VERCEL
+  ? path.join('/tmp', 'movievault-images')
+  : path.resolve(__dirname, '../../media-cache/images');
 
 const ALLOWED_SIZES = new Set([
   'w92', 'w154', 'w185', 'w342', 'w500', 'w784',
@@ -39,13 +40,15 @@ router.get(
     }
 
     const cachePath = path.join(CACHE_DIR, `${size}${file}`);
-    const sendCached = async () => {
+    const imageHeaders = () => {
       res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
       res.setHeader('Content-Type', 'image/jpeg');
-      fs.createReadStream(cachePath).pipe(res);
     };
 
-    if (fs.existsSync(cachePath)) return sendCached();
+    if (fs.existsSync(cachePath)) {
+      imageHeaders();
+      return fs.createReadStream(cachePath).pipe(res);
+    }
 
     const upstream = `${env.tmdbImageBaseUrl}/${size}${file}`;
     let upstreamRes;
@@ -62,12 +65,17 @@ router.get(
       return res.status(502).json({ error: 'UPSTREAM_ERROR', message: `Image upstream ${upstreamRes.status}` });
     }
 
-    await fsp.mkdir(path.dirname(cachePath), { recursive: true });
-    const tmpPath = `${cachePath}.${process.pid}.tmp`;
-    await pipeline(Readable.fromWeb(upstreamRes.body), fs.createWriteStream(tmpPath));
-    await fsp.rename(tmpPath, cachePath);
+    const buf = Buffer.from(await upstreamRes.arrayBuffer());
+    try {
+      await fsp.mkdir(path.dirname(cachePath), { recursive: true });
+      await fsp.writeFile(cachePath, buf);
+    } catch {
+      // disk unavailable (e.g. serverless read-only FS) — serve without caching
+    }
 
-    return sendCached();
+    imageHeaders();
+    res.setHeader('Content-Length', buf.length);
+    return res.end(buf);
   })
 );
 

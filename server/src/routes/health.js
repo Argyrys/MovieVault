@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { pool } from '../db/pool.js';
+import { query } from '../db/pool.js';
 import { asyncHandler } from '../middleware/errors.js';
 import { tmdbConfigured } from '../services/tmdb.js';
 
@@ -8,10 +8,10 @@ const router = Router();
 router.get('/', asyncHandler(async (req, res) => {
   let db = 'down';
   try {
-    await pool.query('SELECT 1');
+    await query('SELECT 1');
     db = 'up';
-  } catch {
-    db = 'down';
+  } catch (err) {
+    db = err.code === 'DB_DISABLED' ? 'disabled' : 'down';
   }
   res.json({
     status: 'ok',

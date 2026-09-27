@@ -6,3 +6,8 @@ dist/
 server/data/
 server/media-cache/
 client/dist/
+
+.vercel
+.env*
+!.env.example
+!**/.env.example

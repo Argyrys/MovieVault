@@ -125,11 +125,12 @@ export const tmdb = {
       normalizeList(d)
     );
   },
-  discover(type, { genre, year, sort, page = 1, voteMin } = {}) {
+  discover(type, { genre, year, sort, page = 1, voteMin, lang } = {}) {
     const params = { page, sort_by: sort || 'popularity.desc' };
     if (genre) params.with_genres = genre;
     if (year) params[type === 'movie' ? 'primary_release_year' : 'first_air_date_year'] = year;
     if (voteMin) params['vote_count.gte'] = voteMin;
+    if (lang) params.with_original_language = lang;
     return tmdbFetch(`/discover/${type}`, params, LIST_TTL).then((d) => normalizeList(d, type));
   },
   async detail(type, id) {
@@ -142,6 +143,7 @@ export const tmdb = {
       ...base,
       tagline: data.tagline || '',
       overview: data.overview || '',
+      original_language: data.original_language || null,
       runtime: type === 'movie' ? data.runtime || null : data.episode_run_time?.[0] || null,
       genres: (data.genres || []).map((g) => ({ id: g.id, name: g.name })),
       status: data.status || '',

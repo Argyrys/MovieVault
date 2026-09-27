@@ -1,0 +1,13 @@
+node_modules/
+**/node_modules/
+.env
+**/.env
+!server/.env.example
+media-cache/
+server/media-cache/
+server/data/
+client/dist/
+.git/
+.vercel/
+*.log
+.DS_Store

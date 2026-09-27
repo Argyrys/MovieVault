@@ -2,6 +2,7 @@
   "name": "movievault",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "MovieVault - Netflix-inspired movie & TV streaming platform",
   "scripts": {
     "dev": "concurrently -n server,client -c yellow,cyan \"npm run dev --prefix server\" \"npm run dev --prefix client\"",

@@ -10,6 +10,16 @@ const router = Router();
 const homeCache = new NodeCache({ stdTTL: 60, useClones: false });
 let homeLastGood = null;
 
+const DEFAULT_HOME_ROWS = [
+  { key: 'trending', label: 'Trending Now', source: 'tmdb:trending', media_type: null },
+  { key: 'popular', label: 'Popular', source: 'tmdb:popular', media_type: null },
+  { key: 'top_rated', label: 'Top Rated', source: 'tmdb:top_rated', media_type: null },
+  { key: 'popular_movies', label: 'Popular Movies', source: 'tmdb:popular', media_type: 'movie' },
+  { key: 'popular_tv', label: 'Popular TV Series', source: 'tmdb:popular', media_type: 'tv' },
+  { key: 'upcoming', label: 'Coming Soon', source: 'tmdb:upcoming', media_type: 'movie' },
+  { key: 'hindi', label: 'Hindi Movies', source: 'tmdb:hindi', media_type: 'movie' },
+];
+
 const SORTS = {
   popular: { movie: 'popularity.desc', tv: 'popularity.desc' },
   rating: { movie: 'vote_average.desc', tv: 'vote_average.desc' },
@@ -66,6 +76,8 @@ async function fetchRowItems(row) {
       return (await tmdb.upcoming()).results;
     case 'tmdb:on_the_air':
       return (await tmdb.onTheAir()).results;
+    case 'tmdb:hindi':
+      return (await tmdb.discover('movie', { lang: 'hi', sort: 'popularity.desc' })).results;
     case 'curated':
       return curatedRow(row);
     default:
@@ -74,11 +86,16 @@ async function fetchRowItems(row) {
 }
 
 async function pickHero() {
-  const featured = await one(
-    `SELECT media_type, tmdb_id, title FROM titles
-     WHERE featured = TRUE AND status = 'published'
-     ORDER BY updated_at DESC LIMIT 1`
-  );
+  let featured = null;
+  try {
+    featured = await one(
+      `SELECT media_type, tmdb_id, title FROM titles
+       WHERE featured = TRUE AND status = 'published'
+       ORDER BY updated_at DESC LIMIT 1`
+    );
+  } catch (err) {
+    console.warn(`[home] featured lookup unavailable: ${err.message}`);
+  }
   const source = featured
     ? { type: featured.media_type, id: featured.tmdb_id }
     : await (async () => {
@@ -99,13 +116,20 @@ router.get(
     if (cached) return res.json(cached);
 
     try {
-      const [hero, rows] = await Promise.all([
-        pickHero().catch((err) => {
-          console.warn(`[home] hero failed: ${err.message}`);
-          return null;
-        }),
-        many(`SELECT id, key, label, source, media_type, genre_id FROM home_rows WHERE enabled = TRUE ORDER BY sort_order ASC`),
-      ]);
+      let rows;
+      try {
+        rows = await many(
+          `SELECT id, key, label, source, media_type, genre_id FROM home_rows WHERE enabled = TRUE ORDER BY sort_order ASC`
+        );
+      } catch (err) {
+        console.warn(`[home] home_rows unavailable, using defaults: ${err.message}`);
+        rows = DEFAULT_HOME_ROWS;
+      }
+
+      const hero = await pickHero().catch((err) => {
+        console.warn(`[home] hero failed: ${err.message}`);
+        return null;
+      });
 
       const rowPayloads = await Promise.all(
         rows.map(async (row) => {
@@ -156,7 +180,10 @@ router.get(
     const opts = { page, sort };
     if (req.query.genre) opts.genre = String(req.query.genre);
     if (req.query.year && /^\d{4}$/.test(req.query.year)) opts.year = req.query.year;
-    if (req.query.voteMin && !Number.isNaN(Number(req.query.voteMin))) opts.voteMin = Number(req.query.voteMin);
+    if (req.query.voteMin && !Number.isNaN(Number(req.query.voteMin))) opts.voteMin = req.query.voteMin;
+    if (req.query.lang && /^[a-z]{2,3}(-[a-z]{2,4})?$/i.test(String(req.query.lang))) {
+      opts.lang = String(req.query.lang).toLowerCase();
+    }
     if (sortKey === 'rating' && !opts.voteMin) opts.voteMin = 150;
 
     const data = await tmdb.discover(type, opts);
@@ -180,9 +207,18 @@ router.get(
   '/genres',
   asyncHandler(async (req, res) => {
     const type = req.query.type === 'tv' ? 'tv' : req.query.type === 'movie' ? 'movie' : null;
-    const rows = type
-      ? await many(`SELECT id, name FROM genres WHERE media_type = $1 ORDER BY name`, [type])
-      : await many(`SELECT id, media_type, name FROM genres ORDER BY media_type, name`);
+    let rows;
+    try {
+      rows = type
+        ? await many(`SELECT id, name FROM genres WHERE media_type = $1 ORDER BY name`, [type])
+        : await many(`SELECT id, media_type, name FROM genres ORDER BY media_type, name`);
+    } catch (err) {
+      console.warn(`[genres] DB unavailable, using TMDB: ${err.message}`);
+      const types = type ? [type] : ['movie', 'tv'];
+      const lists = await Promise.all(types.map((t) => tmdb.genres(t)));
+      rows = types.flatMap((t, i) => lists[i].map((g) => ({ id: g.id, media_type: t, name: g.name })));
+      if (type) rows.sort((a, b) => a.name.localeCompare(b.name));
+    }
     res.json({ genres: rows });
   })
 );
@@ -193,13 +229,18 @@ router.get(
     validateType(req.params.type);
     const tmdbId = validateId(req.params.id);
 
-    const dbRow = await one(
-      `SELECT status, featured, title, overview, poster_path, backdrop_path,
-              to_char(release_date, 'YYYY-MM-DD') AS release_date, runtime,
-              vote_average, trailer_key, original_title
-       FROM titles WHERE media_type = $1 AND tmdb_id = $2`,
-      [req.params.type, tmdbId]
-    );
+    let dbRow = null;
+    try {
+      dbRow = await one(
+        `SELECT status, featured, title, overview, poster_path, backdrop_path,
+                to_char(release_date, 'YYYY-MM-DD') AS release_date, runtime,
+                vote_average, trailer_key, original_title
+         FROM titles WHERE media_type = $1 AND tmdb_id = $2`,
+        [req.params.type, tmdbId]
+      );
+    } catch (err) {
+      console.warn(`[title] DB overrides unavailable: ${err.message}`);
+    }
 
     if (dbRow && (dbRow.status === 'hidden' || dbRow.status === 'draft')) {
       throw new TmdbError('Title not found', 404);
@@ -227,6 +268,7 @@ router.get(
       backdrop_url: imageUrl('w1280', merged.backdrop_path) || item.backdrop_url,
       tagline: merged.tagline || '',
       overview: merged.overview || '',
+      original_language: merged.original_language || null,
       runtime: merged.runtime || null,
       status: merged.status || '',
       genres: merged.genres || [],

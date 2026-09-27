@@ -25,6 +25,7 @@ export default function Browse() {
   const type = params.get('type') || '';
   const genre = params.get('genre') || '';
   const year = params.get('year') || '';
+  const lang = params.get('lang') || '';
   const sort = params.get('sort') || 'popularity.desc';
   const page = Number(params.get('page')) || 1;
 
@@ -40,14 +41,14 @@ export default function Browse() {
     let alive = true;
     setLoading(true);
     api
-      .browse({ type, genre, year, sort, page })
+      .browse({ type, genre, year, lang, sort, page })
       .then((d) => alive && setData(d))
       .catch((e) => alive && setError(e.message))
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
-  }, [type, genre, year, sort, page]);
+  }, [type, genre, year, lang, sort, page]);
 
   useEffect(() => {
     let alive = true;
@@ -120,6 +121,24 @@ export default function Browse() {
                   {y}
                 </option>
               ))}
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label htmlFor="f-lang">Language</label>
+            <select id="f-lang" value={lang} onChange={(e) => setParam('lang', e.target.value)}>
+              <option value="">Any language</option>
+              <option value="hi">Hindi</option>
+              <option value="en">English</option>
+              <option value="ta">Tamil</option>
+              <option value="te">Telugu</option>
+              <option value="ko">Korean</option>
+              <option value="ja">Japanese</option>
+              <option value="es">Spanish</option>
+              <option value="fr">French</option>
+              <option value="de">German</option>
+              <option value="pt">Portuguese</option>
+              <option value="zh">Chinese</option>
             </select>
           </div>
 
