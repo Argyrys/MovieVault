@@ -1,16 +1,37 @@
-import { useEffect, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { langName } from '../lib/format.js';
 import './Player.css';
 
-export default function NativePlayer({ src, poster, storageKey }) {
+const NativePlayer = forwardRef(function NativePlayer({ src, poster, storageKey, onAudioInfo, isHls }, ref) {
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
-  const menuRef = useRef(null);
   const tracksRef = useRef([]);
   const [error, setError] = useState(null);
   const [audioTracks, setAudioTracks] = useState([]);
   const [audioCurrent, setAudioCurrent] = useState(null);
-  const [audioOpen, setAudioOpen] = useState(false);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      pickAudio(track) {
+        const hls = hlsRef.current;
+        if (hls) {
+          hls.audioTrack = track.id;
+        } else {
+          const list = videoRef.current?.audioTracks;
+          if (list) {
+            for (let i = 0; i < list.length; i++) list[i].enabled = list[i].id === track.id;
+          }
+        }
+        setAudioCurrent(track);
+      },
+    }),
+    []
+  );
+
+  useEffect(() => {
+    onAudioInfo?.(audioTracks, audioCurrent);
+  }, [audioTracks, audioCurrent, onAudioInfo]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -20,7 +41,6 @@ export default function NativePlayer({ src, poster, storageKey }) {
     setError(null);
     setAudioTracks([]);
     setAudioCurrent(null);
-    setAudioOpen(false);
     tracksRef.current = [];
 
     const resumeKey = storageKey ? `mv_pos_${storageKey}` : null;
@@ -70,8 +90,8 @@ export default function NativePlayer({ src, poster, storageKey }) {
       video.audioTracks.addEventListener('removetrack', onNativeChange);
     }
 
-    const isHls = src.includes('.m3u8');
-    if (isHls) {
+    const useHls = isHls ?? src.includes('.m3u8');
+    if (useHls) {
       import('hls.js')
         .then(({ default: Hls }) => {
           if (cancelled) return;
@@ -142,36 +162,6 @@ export default function NativePlayer({ src, poster, storageKey }) {
     };
   }, [src, storageKey]);
 
-  useEffect(() => {
-    if (!audioOpen) return;
-    const onDown = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) setAudioOpen(false);
-    };
-    const onKey = (e) => {
-      if (e.key === 'Escape') setAudioOpen(false);
-    };
-    document.addEventListener('pointerdown', onDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('pointerdown', onDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [audioOpen]);
-
-  const pickAudio = (track) => {
-    const hls = hlsRef.current;
-    if (hls) {
-      hls.audioTrack = track.id;
-    } else {
-      const list = videoRef.current?.audioTracks;
-      if (list) {
-        for (let i = 0; i < list.length; i++) list[i].enabled = list[i].id === track.id;
-      }
-    }
-    setAudioCurrent(track);
-    setAudioOpen(false);
-  };
-
   if (error) return <div className="player-state">⚠ {error}</div>;
 
   return (
@@ -184,40 +174,8 @@ export default function NativePlayer({ src, poster, storageKey }) {
         poster={poster}
         playsInline
       />
-      {audioTracks.length > 1 && (
-        <div className="audio-menu" ref={menuRef}>
-          <button
-            type="button"
-            className="audio-chip"
-            aria-haspopup="menu"
-            aria-expanded={audioOpen}
-            onClick={(e) => {
-              e.stopPropagation();
-              setAudioOpen((o) => !o);
-            }}
-          >
-            🔊 {audioCurrent?.name || 'Audio'} <span className="audio-caret">▾</span>
-          </button>
-          {audioOpen && (
-            <ul className="audio-list" role="menu">
-              {audioTracks.map((t) => (
-                <li key={t.id}>
-                  <button
-                    type="button"
-                    role="menuitemradio"
-                    aria-checked={audioCurrent?.id === t.id}
-                    className={audioCurrent?.id === t.id ? 'active' : ''}
-                    onClick={() => pickAudio(t)}
-                  >
-                    <span className="audio-tick">{audioCurrent?.id === t.id ? '✓' : ''}</span>
-                    {t.name}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
     </div>
   );
-}
+});
+
+export default NativePlayer;

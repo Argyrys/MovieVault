@@ -43,6 +43,7 @@ router.get(
       return {
         ...s,
         url: proxiedUrl(s.url, s.headers || {}),
+        hls: s.url.includes('.m3u8'),
         upstream_headers: undefined,
         headers: undefined,
       };

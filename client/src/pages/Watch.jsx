@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api.js';
 import { langName } from '../lib/format.js';
@@ -20,6 +20,39 @@ export default function Watch() {
   const [error, setError] = useState(null);
   const [trailer, setTrailer] = useState(false);
   const isTv = type === 'tv';
+
+  const playerRef = useRef(null);
+  const audioMenuRef = useRef(null);
+  const [audioTracks, setAudioTracks] = useState([]);
+  const [audioCurrent, setAudioCurrent] = useState(null);
+  const [audioOpen, setAudioOpen] = useState(false);
+
+  const handleAudioInfo = useCallback((tracks, current) => {
+    setAudioTracks(tracks || []);
+    setAudioCurrent(current || null);
+  }, []);
+
+  useEffect(() => {
+    setAudioTracks([]);
+    setAudioCurrent(null);
+    setAudioOpen(false);
+  }, [selected]);
+
+  useEffect(() => {
+    if (!audioOpen) return;
+    const onDown = (e) => {
+      if (audioMenuRef.current && !audioMenuRef.current.contains(e.target)) setAudioOpen(false);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') setAudioOpen(false);
+    };
+    document.addEventListener('pointerdown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [audioOpen]);
 
   useEffect(() => {
     let alive = true;
@@ -116,9 +149,12 @@ export default function Watch() {
             <EmbedPlayer src={selected.url} />
           ) : (
             <NativePlayer
+              ref={playerRef}
               src={selected.url}
               poster={detail?.backdrop_url}
               storageKey={storageKey}
+              onAudioInfo={handleAudioInfo}
+              isHls={selected.hls}
             />
           ))}
       </div>
@@ -149,6 +185,43 @@ export default function Watch() {
               </button>
             ))}
             {servers?.length === 0 && <span className="server-empty">none online</span>}
+            {audioTracks.length > 1 && (
+              <div className="audio-menu" ref={audioMenuRef}>
+                <button
+                  type="button"
+                  className="audio-chip"
+                  aria-haspopup="menu"
+                  aria-expanded={audioOpen}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAudioOpen((o) => !o);
+                  }}
+                >
+                  🔊 {audioCurrent?.name || 'Audio'} <span className="audio-caret">▾</span>
+                </button>
+                {audioOpen && (
+                  <ul className="audio-list" role="menu">
+                    {audioTracks.map((t) => (
+                      <li key={t.id}>
+                        <button
+                          type="button"
+                          role="menuitemradio"
+                          aria-checked={audioCurrent?.id === t.id}
+                          className={audioCurrent?.id === t.id ? 'active' : ''}
+                          onClick={() => {
+                            playerRef.current?.pickAudio(t);
+                            setAudioOpen(false);
+                          }}
+                        >
+                          <span className="audio-tick">{audioCurrent?.id === t.id ? '✓' : ''}</span>
+                          {t.name}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
           </div>
 
           {isTv && (

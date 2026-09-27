@@ -119,6 +119,80 @@
   font-size: 13px;
 }
 
+.server-list .audio-menu {
+  position: relative;
+  z-index: 30;
+}
+
+.audio-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--accent);
+  color: var(--accent-bright);
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.audio-chip:hover {
+  border-color: var(--accent-bright);
+}
+
+.audio-caret {
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+.audio-list {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 195px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: rgba(14, 14, 16, 0.97);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55);
+  z-index: 40;
+}
+
+.audio-list button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 0;
+  color: var(--text-muted);
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.audio-list button:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+}
+
+.audio-list button.active {
+  color: var(--accent-bright);
+  font-weight: 700;
+}
+
+.audio-tick {
+  display: inline-block;
+  width: 14px;
+}
+
 .ep-nav {
   margin-bottom: 18px;
 }
