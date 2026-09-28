@@ -26,6 +26,7 @@ const HOME_ROWS = [
   { key: 'popular_tv', label: 'Popular TV Series', source: 'tmdb:popular', media_type: 'tv', sort_order: 50 },
   { key: 'upcoming', label: 'Coming Soon', source: 'tmdb:upcoming', media_type: 'movie', sort_order: 60 },
   { key: 'hindi', label: 'Hindi Movies', source: 'tmdb:hindi', media_type: 'movie', sort_order: 65 },
+  { key: 'kdrama', label: 'K-Dramas', source: 'tmdb:kdrama', media_type: 'tv', sort_order: 70 },
   { key: 'featured', label: 'Featured in the Vault', source: 'curated', media_type: null, sort_order: 5 },
 ];
 
@@ -36,6 +37,7 @@ const PROVIDERS = [
   { id: 'autoembed', name: 'AutoEmbed', type: 'embed', priority: 40 },
   { id: 'vidnest', name: 'VidNest', type: 'embed', priority: 15 },
   { id: 'vidzee', name: 'Hindi', type: 'direct', priority: 17 },
+  { id: 'nontongo', name: 'K-Drama', type: 'embed', priority: 18 },
   { id: 'vixsrc', name: 'VixSrc (direct)', type: 'direct', priority: 50 },
 ];
 
