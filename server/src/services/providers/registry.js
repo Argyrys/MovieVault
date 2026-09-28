@@ -6,9 +6,8 @@ import autoembed from './autoembed.js';
 import vidfast from './vidfast.js';
 import vidnest from './vidnest.js';
 import vidzee from './vidzee.js';
-import nontongo from './nontongo.js';
 
-const MODULES = { vidsrc, vidlink, autoembed, vidfast, vidnest, vidzee, nontongo };
+const MODULES = { vidsrc, vidlink, autoembed, vidfast, vidnest, vidzee };
 
 const configCache = new NodeCache({ stdTTL: 60, useClones: false });
 const streamCache = new NodeCache({ stdTTL: 1800, useClones: false });
@@ -36,7 +35,6 @@ function recordSuccess(id) {
 const DEFAULT_CONFIGS = [
   { id: 'vidnest', name: 'VidNest', type: 'embed', priority: 15 },
   { id: 'vidzee', name: 'Hindi', type: 'direct', priority: 17 },
-  { id: 'nontongo', name: 'K-Drama', type: 'embed', priority: 18 },
   { id: 'vidlink', name: 'VidLink', type: 'embed', priority: 20 },
   { id: 'vidfast', name: 'VidFast', type: 'embed', priority: 30 },
   { id: 'autoembed', name: 'AutoEmbed', type: 'embed', priority: 40 },

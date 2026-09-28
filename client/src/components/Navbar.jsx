@@ -85,6 +85,9 @@ export default function Navbar() {
           <NavLink to="/browse?type=tv" onClick={closeMenu}>
             TV Series
           </NavLink>
+          <NavLink to="/browse?type=tv&lang=ko&genre=18" onClick={closeMenu}>
+            K-Dramas
+          </NavLink>
           <NavLink to="/admin" onClick={closeMenu}>
             Admin
           </NavLink>

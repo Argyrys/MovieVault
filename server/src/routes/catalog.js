@@ -18,6 +18,9 @@ const DEFAULT_HOME_ROWS = [
   { key: 'popular_tv', label: 'Popular TV Series', source: 'tmdb:popular', media_type: 'tv' },
   { key: 'upcoming', label: 'Coming Soon', source: 'tmdb:upcoming', media_type: 'movie' },
   { key: 'hindi', label: 'Hindi Movies', source: 'tmdb:hindi', media_type: 'movie' },
+  { key: 'kdrama', label: 'K-Dramas', source: 'tmdb:kdrama', media_type: 'tv' },
+  { key: 'kdrama_new', label: 'New K-Dramas', source: 'tmdb:kdrama_new', media_type: 'tv' },
+  { key: 'kdrama_top', label: 'Top-Rated K-Dramas', source: 'tmdb:kdrama_top', media_type: 'tv' },
 ];
 
 const SORTS = {
@@ -78,6 +81,19 @@ async function fetchRowItems(row) {
       return (await tmdb.onTheAir()).results;
     case 'tmdb:hindi':
       return (await tmdb.discover('movie', { lang: 'hi', sort: 'popularity.desc' })).results;
+    case 'tmdb:kdrama': {
+      const [a, b] = await Promise.all([
+        tmdb.discover('tv', { lang: 'ko', genre: '18', sort: 'popularity.desc', page: 1 }),
+        tmdb.discover('tv', { lang: 'ko', genre: '18', sort: 'popularity.desc', page: 2 }),
+      ]);
+      return [...a.results, ...b.results].slice(0, 40);
+    }
+    case 'tmdb:kdrama_new':
+      return (await tmdb.discover('tv', { lang: 'ko', genre: '18', sort: 'first_air_date.desc' })).results;
+    case 'tmdb:kdrama_top':
+      return (
+        await tmdb.discover('tv', { lang: 'ko', genre: '18', sort: 'vote_average.desc', voteMin: 100 })
+      ).results;
     case 'curated':
       return curatedRow(row);
     default:
