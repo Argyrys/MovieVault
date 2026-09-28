@@ -34,7 +34,7 @@ function recordSuccess(id) {
 
 const DEFAULT_CONFIGS = [
   { id: 'vidnest', name: 'VidNest', type: 'embed', priority: 15 },
-  { id: 'vidzee', name: 'VidZee', type: 'direct', priority: 17 },
+  { id: 'vidzee', name: 'Hindi', type: 'direct', priority: 17 },
   { id: 'vidlink', name: 'VidLink', type: 'embed', priority: 20 },
   { id: 'vidfast', name: 'VidFast', type: 'embed', priority: 30 },
   { id: 'autoembed', name: 'AutoEmbed', type: 'embed', priority: 40 },
