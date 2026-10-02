@@ -40,10 +40,19 @@ router.get(
 
     const payload = servers.map((s) => {
       if (s.type === 'embed') return s;
+      const headers = s.headers || {};
       return {
         ...s,
-        url: proxiedUrl(s.url, s.headers || {}),
+        url: proxiedUrl(s.url, headers),
         hls: s.url.includes('.m3u8'),
+        subtitles: (Array.isArray(s.subtitles) ? s.subtitles : [])
+          .filter((t) => t && typeof t.url === 'string' && t.url.startsWith('https://'))
+          .slice(0, 16)
+          .map((t) => ({
+            url: proxiedUrl(t.url, headers),
+            label: String(t.label || 'Subtitle').slice(0, 60),
+            lang: t.lang || null,
+          })),
         upstream_headers: undefined,
         headers: undefined,
       };

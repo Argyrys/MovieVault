@@ -2,7 +2,10 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 're
 import { langName } from '../lib/format.js';
 import './Player.css';
 
-const NativePlayer = forwardRef(function NativePlayer({ src, poster, storageKey, onAudioInfo, isHls }, ref) {
+const NativePlayer = forwardRef(function NativePlayer(
+  { src, poster, storageKey, onAudioInfo, isHls, subtitles },
+  ref
+) {
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
   const tracksRef = useRef([]);
@@ -164,6 +167,8 @@ const NativePlayer = forwardRef(function NativePlayer({ src, poster, storageKey,
 
   if (error) return <div className="player-state">⚠ {error}</div>;
 
+  const defaultSubIdx = (subtitles || []).findIndex((t) => /^english$/i.test(t.label || ''));
+
   return (
     <div className="player-shell">
       <video
@@ -173,7 +178,18 @@ const NativePlayer = forwardRef(function NativePlayer({ src, poster, storageKey,
         autoPlay
         poster={poster}
         playsInline
-      />
+      >
+        {(subtitles || []).map((t, i) => (
+          <track
+            key={`${t.url}-${i}`}
+            kind="subtitles"
+            src={t.url}
+            label={t.label}
+            srclang={t.lang || undefined}
+            default={i === defaultSubIdx}
+          />
+        ))}
+      </video>
     </div>
   );
 });

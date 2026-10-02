@@ -14,9 +14,11 @@ export default function Watch() {
   const episode = Number(params.get('e')) || 1;
 
   const [detail, setDetail] = useState(null);
+  const [detailReady, setDetailReady] = useState(false);
   const [episodes, setEpisodes] = useState(null);
   const [servers, setServers] = useState(null);
   const [selected, setSelected] = useState(null);
+  const [userPicked, setUserPicked] = useState(false);
   const [error, setError] = useState(null);
   const [trailer, setTrailer] = useState(false);
   const isTv = type === 'tv';
@@ -57,10 +59,12 @@ export default function Watch() {
   useEffect(() => {
     let alive = true;
     setDetail(null);
+    setDetailReady(false);
     api
       .title(type, id)
       .then((d) => alive && setDetail(d))
-      .catch((e) => alive && setError(e.message));
+      .catch((e) => alive && setError(e.message))
+      .finally(() => alive && setDetailReady(true));
     return () => {
       alive = false;
     };
@@ -83,18 +87,25 @@ export default function Watch() {
     let alive = true;
     setServers(null);
     setSelected(null);
+    setUserPicked(false);
     api
       .stream(type, id, isTv ? { season, episode } : undefined)
       .then((d) => {
         if (!alive) return;
         setServers(d.servers);
-        if (d.servers?.length) setSelected(d.servers[0]);
       })
       .catch((e) => alive && setError(e.message));
     return () => {
       alive = false;
     };
   }, [type, id, isTv, season, episode]);
+
+  useEffect(() => {
+    if (userPicked || !servers?.length || !detailReady) return;
+    const preferHindi = detail?.original_language === 'en';
+    const preferred = preferHindi ? servers.find((s) => s.language === 'Hindi') : null;
+    setSelected(preferred || servers[0]);
+  }, [servers, detail, detailReady, userPicked]);
 
   const setEp = (s, e) => {
     const next = new URLSearchParams(params);
@@ -155,6 +166,7 @@ export default function Watch() {
               storageKey={storageKey}
               onAudioInfo={handleAudioInfo}
               isHls={selected.hls}
+              subtitles={selected.subtitles}
             />
           ))}
       </div>
@@ -177,7 +189,10 @@ export default function Watch() {
               <button
                 key={s.id}
                 className={`server-chip ${selected?.id === s.id ? 'active' : ''}`}
-                onClick={() => setSelected(s)}
+                onClick={() => {
+                  setUserPicked(true);
+                  setSelected(s);
+                }}
                 title={s.quality || s.id}
               >
                 {s.name}
