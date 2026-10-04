@@ -38,6 +38,23 @@ async function fetchJson(url, timeoutMs) {
   return res.json();
 }
 
+// VidNest's designated Hindi bridge ("delta" in their player). Movies only:
+// their TV handling for this bridge is unverified, and K-dramas should keep
+// their original audio anyway. Returns null when Hindi isn't available.
+async function tryHindiBridge(tmdbId, timeoutMs) {
+  const data = decodeCipher(await fetchJson(`${API_BASE}/allmovies/movie/${tmdbId}`, timeoutMs));
+  const streams = Array.isArray(data?.streams) ? data.streams : [];
+  const hindi = streams.find(
+    (s) =>
+      s &&
+      typeof s.language === 'string' &&
+      s.language.toLowerCase() === 'hindi' &&
+      typeof s.url === 'string' &&
+      s.url.startsWith('https://')
+  );
+  return hindi || null;
+}
+
 async function getSubtitles({ type, tmdbId, season, episode }) {
   try {
     const url =
@@ -74,16 +91,18 @@ export default {
         args.type === 'movie'
           ? `${API_BASE}/nextgencloudfabric/movie/${args.tmdbId}`
           : `${API_BASE}/nextgencloudfabric/tv/${args.tmdbId}/${args.season}/${args.episode}`;
-      const [stream, subtitles] = await Promise.all([
-        fetchJson(apiPath, 6000).then(decodeCipher),
+      const [hindi, stream, subtitles] = await Promise.all([
+        args.type === 'movie' ? tryHindiBridge(args.tmdbId, 2500).catch(() => null) : null,
+        fetchJson(apiPath, 5500).then(decodeCipher).catch(() => null),
         getSubtitles(args),
       ]);
-      if (!stream?.url || typeof stream.url !== 'string' || !stream.url.startsWith('https://')) {
+      const chosen = hindi || stream;
+      if (!chosen?.url || typeof chosen.url !== 'string' || !chosen.url.startsWith('https://')) {
         throw new Error('vidnest: no stream url');
       }
       const headers = {};
-      if (stream.headers && typeof stream.headers === 'object') {
-        for (const [k, v] of Object.entries(stream.headers)) {
+      if (chosen.headers && typeof chosen.headers === 'object') {
+        for (const [k, v] of Object.entries(chosen.headers)) {
           if (typeof v === 'string') headers[k] = v;
         }
       }
@@ -93,8 +112,9 @@ export default {
         {
           type: 'direct',
           kind: 'direct',
-          url: stream.url,
+          url: chosen.url,
           quality: 'auto',
+          language: hindi ? 'Hindi' : null,
           subtitles,
           headers,
         },
