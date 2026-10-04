@@ -701,6 +701,39 @@ export const metadata = {
     const list = type === 'tv' ? TV_GENRES : MOVIE_GENRES;
     return Promise.resolve(list.map((g) => ({ id: g.id, name: g.name })));
   },
+
+  async sitemapEntries() {
+    const key = 'simkl:sitemap:entries';
+    const hit = cache.get(key);
+    if (hit) return hit;
+    const [mv, tv, hindi] = await Promise.all([
+      weekFile('movies'),
+      weekFile('tv'),
+      hindiRow(),
+    ]);
+    const seen = new Set();
+    const out = [];
+    const push = (item, type) => {
+      const n = normalize(item, type);
+      if (!n || !n.tmdb_id) return;
+      const k = `${type}:${n.tmdb_id}`;
+      if (seen.has(k)) return;
+      seen.add(k);
+      out.push({ type, tmdb_id: n.tmdb_id, release_date: n.release_date });
+    };
+    for (const i of mv) push(i, 'movie');
+    for (const i of tv) push(i, 'tv');
+    for (const i of hindi.results || []) {
+      const k = `movie:${i.tmdb_id}`;
+      if (!seen.has(k)) {
+        seen.add(k);
+        out.push({ type: 'movie', tmdb_id: i.tmdb_id, release_date: i.release_date });
+      }
+    }
+    const res = out.slice(0, 1200);
+    cache.set(key, res, LIST_TTL);
+    return res;
+  },
 };
 
 export function imageUrl(size, path) {
