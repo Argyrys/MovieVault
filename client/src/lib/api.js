@@ -33,3 +33,60 @@ export const api = {
   stream: (type, id, params) => get(`/stream/${type}/${id}`, params),
   health: () => get('/health'),
 };
+
+const TOKEN_KEY = 'mv_admin_token';
+
+export function getAdminToken() {
+  try {
+    return sessionStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setAdminToken(token) {
+  try {
+    if (token) sessionStorage.setItem(TOKEN_KEY, token);
+    else sessionStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+async function adminFetch(path, { method = 'GET', body } = {}) {
+  const headers = {};
+  const token = getAdminToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+
+  const res = await fetch(BASE + path, {
+    method,
+    headers,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  let data = null;
+  try {
+    data = await res.json();
+  } catch {
+    /* ignore */
+  }
+  if (!res.ok) {
+    if (res.status === 401) setAdminToken(null);
+    const err = new Error(data?.message || `Request failed (${res.status})`);
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
+
+export const adminApi = {
+  login: (email, password) => adminFetch('/admin/login', { method: 'POST', body: { email, password } }),
+  me: () => adminFetch('/admin/me'),
+  dashboard: () => adminFetch('/admin/dashboard'),
+  providers: () => adminFetch('/admin/providers'),
+  updateProvider: (id, patch) => adminFetch(`/admin/providers/${id}`, { method: 'PATCH', body: patch }),
+  homeRows: () => adminFetch('/admin/home-rows'),
+  updateHomeRow: (id, patch) => adminFetch(`/admin/home-rows/${id}`, { method: 'PATCH', body: patch }),
+  changePassword: (currentPassword, newPassword) =>
+    adminFetch('/admin/change-password', { method: 'POST', body: { currentPassword, newPassword } }),
+};

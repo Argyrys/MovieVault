@@ -122,3 +122,8 @@ export async function getServers({ type, tmdbId, season, episode }) {
 export function listProviderModules() {
   return Object.entries(MODULES).map(([id, m]) => ({ id, name: m.name, kind: m.kind }));
 }
+
+export function invalidateProviderCaches() {
+  configCache.del('configs');
+  streamCache.flushAll();
+}

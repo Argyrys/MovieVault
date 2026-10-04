@@ -10,6 +10,10 @@ const router = Router();
 const homeCache = new NodeCache({ stdTTL: 60, useClones: false });
 let homeLastGood = null;
 
+export function invalidateHomeCache() {
+  homeCache.del('home');
+}
+
 const DEFAULT_HOME_ROWS = [
   { key: 'trending', label: 'Trending Now', source: 'tmdb:trending', media_type: null },
   { key: 'popular', label: 'Popular', source: 'tmdb:popular', media_type: null },
