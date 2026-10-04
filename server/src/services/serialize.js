@@ -1,4 +1,4 @@
-import { imageUrl } from './tmdb.js';
+import { imageUrl } from './metadata.js';
 
 const dateStr = (d) => (d instanceof Date ? d.toISOString().slice(0, 10) : d || null);
 

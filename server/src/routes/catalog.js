@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import NodeCache from 'node-cache';
 import { one, many } from '../db/pool.js';
-import { tmdb, TmdbError, imageUrl } from '../services/tmdb.js';
+import { tmdb, TmdbError, imageUrl } from '../services/metadata.js';
 import { toItem, toList, toHero, dbRowToNormalized } from '../services/serialize.js';
 import { asyncHandler } from '../middleware/errors.js';
 

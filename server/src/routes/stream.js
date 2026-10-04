@@ -3,7 +3,7 @@ import { pipeline } from 'node:stream/promises';
 import { Router } from 'express';
 import { getServers } from '../services/providers/registry.js';
 import { decodeProxy, isSafeUpstream, proxiedUrl } from '../services/proxyutil.js';
-import { TmdbError } from '../services/tmdb.js';
+import { TmdbError } from '../services/metadata.js';
 import { asyncHandler } from '../middleware/errors.js';
 
 const router = Router();

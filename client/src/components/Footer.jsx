@@ -18,6 +18,10 @@ export default function Footer() {
           <Link to="/browse?type=tv">TV Series</Link>
         </nav>
         <p className="footer-tmdb">
+          Movie data provided by <a href="https://simkl.com" target="_blank" rel="noreferrer">Simkl</a>.
+          This product uses the Simkl API but is not endorsed or certified by Simkl.
+        </p>
+        <p className="footer-tmdb">
           This product uses the TMDB API but is not endorsed or certified by TMDB. Stream availability
           depends on third-party providers.
         </p>

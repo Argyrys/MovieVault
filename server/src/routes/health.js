@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { query } from '../db/pool.js';
 import { asyncHandler } from '../middleware/errors.js';
-import { tmdbConfigured } from '../services/tmdb.js';
+import { tmdbConfigured } from '../services/metadata.js';
 
 const router = Router();
 
