@@ -190,8 +190,6 @@ const NativePlayer = forwardRef(function NativePlayer(
     };
   }, [src, storageKey]);
 
-  if (error) return <div className="player-state">⚠ {error}</div>;
-
   const defaultSubIdx = (subtitles || []).findIndex((t) => /^english$/i.test(t.label || ''));
 
   return (
@@ -215,6 +213,7 @@ const NativePlayer = forwardRef(function NativePlayer(
           />
         ))}
       </video>
+      {error && <div className="player-error">⚠ {error}</div>}
     </div>
   );
 });

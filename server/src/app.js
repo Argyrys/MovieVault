@@ -12,6 +12,7 @@ import streamRouter from './routes/stream.js';
 import sitemapRouter from './routes/sitemap.js';
 import adminRouter from './routes/admin.js';
 import authRouter from './routes/auth.js';
+import downloadRouter from './routes/download.js';
 
 export function createApp() {
   const app = express();
@@ -24,7 +25,7 @@ export function createApp() {
 
   app.use(
     '/api',
-    rateLimit({ windowMs: 60_000, max: 300, standardHeaders: true, legacyHeaders: false })
+    rateLimit({ windowMs: 60_000, max: 1000, standardHeaders: true, legacyHeaders: false })
   );
 
   app.use('/api/health', healthRouter);
@@ -33,6 +34,7 @@ export function createApp() {
   app.use('/api', catalogRouter);
   app.use('/api/auth', authRouter);
   app.use('/api/admin', adminRouter);
+  app.use('/api/download', downloadRouter);
   app.use(sitemapRouter);
 
   app.use(notFound);

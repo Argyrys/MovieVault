@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api.js';
+import { downloadSource } from '../lib/download.js';
 import { langName } from '../lib/format.js';
 import NativePlayer from '../components/NativePlayer.jsx';
 import EmbedPlayer from '../components/EmbedPlayer.jsx';
@@ -33,6 +34,10 @@ export default function Watch() {
   const [qualityLevels, setQualityLevels] = useState([]);
   const [qualityCurrentId, setQualityCurrentId] = useState(-1);
   const [qualityOpen, setQualityOpen] = useState(false);
+
+  const dlAbortRef = useRef(null);
+  const [dlBusy, setDlBusy] = useState(false);
+  const [dlState, setDlState] = useState(null);
 
   const handleAudioInfo = useCallback((tracks, current) => {
     setAudioTracks(tracks || []);
@@ -172,6 +177,57 @@ export default function Watch() {
     qualityCurrentId === -1
       ? 'Auto'
       : qualityLevels.find((l) => l.id === qualityCurrentId)?.name || 'Auto';
+
+  const dlMeta = useMemo(() => {
+    if (!selected || selected.kind === 'embed' || !detail) return null;
+    const base = isTv
+      ? `${detail.title || 'Episode'} S${String(season).padStart(2, '0')}E${String(episode).padStart(2, '0')}`
+      : `${detail.title || 'Movie'}${detail.year ? ` (${detail.year})` : ''}`;
+    const level = qualityLevels.find((l) => l.id === qualityCurrentId);
+    const heights = [...qualityLevels]
+      .filter((l) => l.height)
+      .sort((a, b) => a.height - b.height);
+    const chosen = level || heights[0] || null;
+    const qualityLabel =
+      chosen?.name || (selected.quality && selected.quality !== 'auto' ? selected.quality : null);
+    return { base, qualityHeight: chosen?.height || null, qualityLabel, isHls: Boolean(selected.hls) };
+  }, [selected, detail, isTv, season, episode, qualityLevels, qualityCurrentId]);
+
+  const startDownload = async () => {
+    if (dlBusy) {
+      dlAbortRef.current?.abort();
+      return;
+    }
+    if (!dlMeta || !selected) return;
+    setDlBusy(true);
+    setDlState({ pct: 0 });
+    const controller = new AbortController();
+    dlAbortRef.current = controller;
+
+    fetch('/api/download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, id, provider: selected.id, quality: dlMeta.qualityLabel }),
+    }).catch(() => {});
+
+    try {
+      await downloadSource({
+        sourceUrl: selected.url,
+        isHls: dlMeta.isHls,
+        filenameBase: dlMeta.base,
+        qualityHeight: dlMeta.qualityHeight,
+        onProgress: (p) => setDlState({ pct: p.pct }),
+        signal: controller.signal,
+      });
+      setDlState(null);
+    } catch (err) {
+      if (err?.name === 'AbortError') setDlState(null);
+      else setDlState({ error: err?.message || 'Download failed' });
+    } finally {
+      setDlBusy(false);
+      dlAbortRef.current = null;
+    }
+  };
 
   if (error && !detail) return <div className="page-state">Failed to load: {error}</div>;
 
@@ -403,6 +459,21 @@ export default function Watch() {
                   : selected.quality || 'auto'}
               </span>
               {detail?.original_language && <span>Original audio: {langName(detail.original_language)}</span>}
+            </div>
+          )}
+          {dlMeta && (
+            <div className="watch-dl-wrap">
+              <button
+                type="button"
+                className={`watch-dl ${dlBusy ? 'busy' : ''}`}
+                onClick={startDownload}
+                title={dlBusy ? 'Click to cancel' : undefined}
+              >
+                {dlBusy
+                  ? `Downloading… ${dlState?.pct ?? 0}%`
+                  : `⬇ Download${dlMeta.qualityLabel ? ` · ${dlMeta.qualityLabel}` : ''}`}
+              </button>
+              {dlState?.error && <p className="watch-dl-error">{dlState.error}</p>}
             </div>
           )}
           <p className="watch-note">

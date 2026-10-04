@@ -34,3 +34,15 @@
   position: relative;
   width: 100%;
 }
+
+.player-error {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.72);
+  color: #ffb3b3;
+  padding: 24px;
+  font-size: 14px;
+}

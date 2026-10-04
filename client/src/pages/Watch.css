@@ -351,3 +351,36 @@
     grid-template-columns: 1fr;
   }
 }
+
+.watch-dl-wrap {
+  margin-top: 14px;
+}
+
+.watch-dl {
+  width: 100%;
+  background: var(--accent);
+  color: #14100a;
+  border: 0;
+  border-radius: 9px;
+  padding: 11px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.watch-dl:hover {
+  filter: brightness(1.08);
+}
+
+.watch-dl.busy {
+  background: var(--bg-elevated);
+  color: var(--accent-bright);
+  border: 1px solid var(--accent);
+}
+
+.watch-dl-error {
+  color: #ff7b7b;
+  font-size: 13px;
+  margin: 8px 0 0;
+}
