@@ -9,6 +9,7 @@ import Search from './pages/Search.jsx';
 import TitleDetail from './pages/TitleDetail.jsx';
 import Watch from './pages/Watch.jsx';
 import Admin from './pages/Admin.jsx';
+import Privacy from './pages/Privacy.jsx';
 import NotFound from './pages/NotFound.jsx';
 
 function ScrollToTop() {
@@ -35,6 +36,7 @@ export default function App() {
           <Route path="/title/:type/:id" element={<TitleDetail />} />
           <Route path="/watch/:type/:id" element={<Watch />} />
           <Route path="/admin/*" element={<Admin />} />
+          <Route path="/privacy" element={<Privacy />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Footer />

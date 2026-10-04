@@ -16,6 +16,7 @@ export default function Footer() {
           <Link to="/browse">Browse</Link>
           <Link to="/browse?type=movie">Movies</Link>
           <Link to="/browse?type=tv">TV Series</Link>
+          <Link to="/privacy">Privacy</Link>
         </nav>
         <p className="footer-tmdb">
           Movie data provided by <a href="https://simkl.com" target="_blank" rel="noreferrer">Simkl</a>.
