@@ -13,6 +13,7 @@ export const env = {
   isProd: process.env.NODE_ENV === 'production',
   port: Number(process.env.PORT) || 5000,
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+  clientOrigins: (process.env.CLIENT_URL || 'http://localhost:5173').split(',').map((s) => s.trim()).filter(Boolean),
   databaseUrl: process.env.DATABASE_URL || '',
   tmdbApiKey: process.env.TMDB_API_KEY || '',
   tmdbBaseUrl: process.env.TMDB_BASE_URL || 'https://api.themoviedb.org/3',
