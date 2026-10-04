@@ -179,41 +179,65 @@ export default function Watch() {
       : qualityLevels.find((l) => l.id === qualityCurrentId)?.name || 'Auto';
 
   const dlMeta = useMemo(() => {
-    if (!selected || selected.kind === 'embed' || !detail) return null;
+    if (!detail) return null;
+    const directs = (servers || []).filter((s) => s.kind !== 'embed');
+    if (!directs.length) return null;
     const base = isTv
       ? `${detail.title || 'Episode'} S${String(season).padStart(2, '0')}E${String(episode).padStart(2, '0')}`
       : `${detail.title || 'Movie'}${detail.year ? ` (${detail.year})` : ''}`;
+    const directSelected = Boolean(selected && selected.kind !== 'embed');
     const level = qualityLevels.find((l) => l.id === qualityCurrentId);
     const heights = [...qualityLevels]
       .filter((l) => l.height)
       .sort((a, b) => a.height - b.height);
     const chosen = level || heights[0] || null;
     const qualityLabel =
-      chosen?.name || (selected.quality && selected.quality !== 'auto' ? selected.quality : null);
-    return { base, qualityHeight: chosen?.height || null, qualityLabel, isHls: Boolean(selected.hls) };
-  }, [selected, detail, isTv, season, episode, qualityLevels, qualityCurrentId]);
+      chosen?.name ||
+      (directSelected && selected.quality && selected.quality !== 'auto' ? selected.quality : null);
+    return { base, directs, directSelected, qualityHeight: chosen?.height || null, qualityLabel };
+  }, [servers, selected, detail, isTv, season, episode, qualityLevels, qualityCurrentId]);
 
   const startDownload = async () => {
     if (dlBusy) {
       dlAbortRef.current?.abort();
       return;
     }
-    if (!dlMeta || !selected) return;
+    if (!dlMeta) return;
     setDlBusy(true);
     setDlState({ pct: 0 });
     const controller = new AbortController();
     dlAbortRef.current = controller;
 
-    fetch('/api/download', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, id, provider: selected.id, quality: dlMeta.qualityLabel }),
-    }).catch(() => {});
-
     try {
+      const ordered =
+        dlMeta.directSelected && selected
+          ? [selected, ...dlMeta.directs.filter((s) => s.id !== selected.id)]
+          : dlMeta.directs;
+
+      let source = null;
+      for (const cand of ordered) {
+        try {
+          const probe = await fetch(cand.url, { signal: controller.signal });
+          if (probe.ok) {
+            source = cand;
+            break;
+          }
+          if (probe.body) probe.body.cancel().catch(() => {});
+        } catch (err) {
+          if (err?.name === 'AbortError') throw err;
+        }
+      }
+      if (!source) throw new Error('No downloadable server available right now');
+
+      fetch('/api/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, id, provider: source.id, quality: dlMeta.qualityLabel }),
+      }).catch(() => {});
+
       await downloadSource({
-        sourceUrl: selected.url,
-        isHls: dlMeta.isHls,
+        sourceUrl: source.url,
+        isHls: Boolean(source.hls),
         filenameBase: dlMeta.base,
         qualityHeight: dlMeta.qualityHeight,
         onProgress: (p) => setDlState({ pct: p.pct }),

@@ -147,8 +147,11 @@ function pickVariant(variants, targetHeight) {
       .filter((v) => v.height && Math.abs(v.height - targetHeight) <= 60)
       .sort((a, b) => Math.abs(a.height - targetHeight) - Math.abs(b.height - targetHeight));
     if (near.length) return near[0];
+    return sorted[0];
   }
-  return sorted[0];
+  const withHeight = sorted.filter((v) => v.height);
+  const pool = withHeight.length ? withHeight : sorted;
+  return pool[pool.length - 1];
 }
 
 async function fetchOk(url, signal) {
