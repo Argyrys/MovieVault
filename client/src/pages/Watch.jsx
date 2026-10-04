@@ -29,15 +29,28 @@ export default function Watch() {
   const [audioCurrent, setAudioCurrent] = useState(null);
   const [audioOpen, setAudioOpen] = useState(false);
 
+  const qualityMenuRef = useRef(null);
+  const [qualityLevels, setQualityLevels] = useState([]);
+  const [qualityCurrentId, setQualityCurrentId] = useState(-1);
+  const [qualityOpen, setQualityOpen] = useState(false);
+
   const handleAudioInfo = useCallback((tracks, current) => {
     setAudioTracks(tracks || []);
     setAudioCurrent(current || null);
+  }, []);
+
+  const handleQualityInfo = useCallback((levels, currentId) => {
+    setQualityLevels(levels || []);
+    setQualityCurrentId(typeof currentId === 'number' ? currentId : -1);
   }, []);
 
   useEffect(() => {
     setAudioTracks([]);
     setAudioCurrent(null);
     setAudioOpen(false);
+    setQualityLevels([]);
+    setQualityCurrentId(-1);
+    setQualityOpen(false);
   }, [selected]);
 
   useEffect(() => {
@@ -55,6 +68,22 @@ export default function Watch() {
       document.removeEventListener('keydown', onKey);
     };
   }, [audioOpen]);
+
+  useEffect(() => {
+    if (!qualityOpen) return;
+    const onDown = (e) => {
+      if (qualityMenuRef.current && !qualityMenuRef.current.contains(e.target)) setQualityOpen(false);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') setQualityOpen(false);
+    };
+    document.addEventListener('pointerdown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [qualityOpen]);
 
   useEffect(() => {
     let alive = true;
@@ -135,6 +164,15 @@ export default function Watch() {
 
   const epData = episodes?.episodes?.find((e) => e.episode_number === episode);
 
+  const sortedQualities = useMemo(
+    () => [...qualityLevels].sort((a, b) => (b.height || 0) - (a.height || 0)),
+    [qualityLevels]
+  );
+  const qualityName =
+    qualityCurrentId === -1
+      ? 'Auto'
+      : qualityLevels.find((l) => l.id === qualityCurrentId)?.name || 'Auto';
+
   if (error && !detail) return <div className="page-state">Failed to load: {error}</div>;
 
   return (
@@ -165,6 +203,7 @@ export default function Watch() {
               poster={detail?.backdrop_url}
               storageKey={storageKey}
               onAudioInfo={handleAudioInfo}
+              onQualityInfo={handleQualityInfo}
               isHls={selected.hls}
               subtitles={selected.subtitles}
             />
@@ -230,6 +269,58 @@ export default function Watch() {
                         >
                           <span className="audio-tick">{audioCurrent?.id === t.id ? '✓' : ''}</span>
                           {t.name}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+            {qualityLevels.length > 1 && (
+              <div className="quality-menu" ref={qualityMenuRef}>
+                <button
+                  type="button"
+                  className="quality-chip"
+                  aria-haspopup="menu"
+                  aria-expanded={qualityOpen}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setQualityOpen((o) => !o);
+                  }}
+                >
+                  ⛶ {qualityName} <span className="audio-caret">▾</span>
+                </button>
+                {qualityOpen && (
+                  <ul className="quality-list" role="menu">
+                    <li key="auto">
+                      <button
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={qualityCurrentId === -1}
+                        className={qualityCurrentId === -1 ? 'active' : ''}
+                        onClick={() => {
+                          playerRef.current?.pickQuality(-1);
+                          setQualityOpen(false);
+                        }}
+                      >
+                        <span className="audio-tick">{qualityCurrentId === -1 ? '✓' : ''}</span>
+                        Auto
+                      </button>
+                    </li>
+                    {sortedQualities.map((q) => (
+                      <li key={q.id}>
+                        <button
+                          type="button"
+                          role="menuitemradio"
+                          aria-checked={qualityCurrentId === q.id}
+                          className={qualityCurrentId === q.id ? 'active' : ''}
+                          onClick={() => {
+                            playerRef.current?.pickQuality(q.id);
+                            setQualityOpen(false);
+                          }}
+                        >
+                          <span className="audio-tick">{qualityCurrentId === q.id ? '✓' : ''}</span>
+                          {q.name}
                         </button>
                       </li>
                     ))}
@@ -305,14 +396,19 @@ export default function Watch() {
             <div className="watch-meta">
               <span>Server: {selected.name}</span>
               <span>Type: {selected.kind === 'embed' ? 'Embed player' : 'Direct stream'}</span>
-              {selected.quality && <span>Quality: {selected.quality}</span>}
+              <span>
+                Quality:{' '}
+                {qualityLevels.length > 1
+                  ? qualityName
+                  : selected.quality || 'auto'}
+              </span>
               {detail?.original_language && <span>Original audio: {langName(detail.original_language)}</span>}
             </div>
           )}
           <p className="watch-note">
             Playback is provided by third-party servers. If one fails, switch servers above.
             {selected?.kind === 'embed' &&
-              ' For embed players, audio/language options (when offered) are inside the player\u2019s own menu.'}
+              ' For embed players, audio/language and quality options (when offered) are inside the player\u2019s own menu.'}
           </p>
         </aside>
       </div>

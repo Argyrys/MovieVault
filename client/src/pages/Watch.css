@@ -119,12 +119,14 @@
   font-size: 13px;
 }
 
-.server-list .audio-menu {
+.server-list .audio-menu,
+.server-list .quality-menu {
   position: relative;
   z-index: 30;
 }
 
-.audio-chip {
+.audio-chip,
+.quality-chip {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -139,7 +141,8 @@
   transition: all 0.15s ease;
 }
 
-.audio-chip:hover {
+.audio-chip:hover,
+.quality-chip:hover {
   border-color: var(--accent-bright);
 }
 
@@ -148,7 +151,8 @@
   opacity: 0.8;
 }
 
-.audio-list {
+.audio-list,
+.quality-list {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
@@ -163,7 +167,8 @@
   z-index: 40;
 }
 
-.audio-list button {
+.audio-list button,
+.quality-list button {
   display: flex;
   width: 100%;
   align-items: center;
@@ -178,12 +183,14 @@
   text-align: left;
 }
 
-.audio-list button:hover {
+.audio-list button:hover,
+.quality-list button:hover {
   background: rgba(255, 255, 255, 0.07);
   color: #fff;
 }
 
-.audio-list button.active {
+.audio-list button.active,
+.quality-list button.active {
   color: var(--accent-bright);
   font-weight: 700;
 }

@@ -3,7 +3,7 @@ import { langName } from '../lib/format.js';
 import './Player.css';
 
 const NativePlayer = forwardRef(function NativePlayer(
-  { src, poster, storageKey, onAudioInfo, isHls, subtitles },
+  { src, poster, storageKey, onAudioInfo, onQualityInfo, isHls, subtitles },
   ref
 ) {
   const videoRef = useRef(null);
@@ -12,6 +12,8 @@ const NativePlayer = forwardRef(function NativePlayer(
   const [error, setError] = useState(null);
   const [audioTracks, setAudioTracks] = useState([]);
   const [audioCurrent, setAudioCurrent] = useState(null);
+  const [qualityLevels, setQualityLevels] = useState([]);
+  const [qualityCurrentId, setQualityCurrentId] = useState(-1);
 
   useImperativeHandle(
     ref,
@@ -28,6 +30,11 @@ const NativePlayer = forwardRef(function NativePlayer(
         }
         setAudioCurrent(track);
       },
+      pickQuality(id) {
+        const hls = hlsRef.current;
+        if (hls) hls.currentLevel = id;
+        setQualityCurrentId(id);
+      },
     }),
     []
   );
@@ -35,6 +42,10 @@ const NativePlayer = forwardRef(function NativePlayer(
   useEffect(() => {
     onAudioInfo?.(audioTracks, audioCurrent);
   }, [audioTracks, audioCurrent, onAudioInfo]);
+
+  useEffect(() => {
+    onQualityInfo?.(qualityLevels, qualityCurrentId);
+  }, [qualityLevels, qualityCurrentId, onQualityInfo]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -45,6 +56,8 @@ const NativePlayer = forwardRef(function NativePlayer(
     setAudioTracks([]);
     setAudioCurrent(null);
     tracksRef.current = [];
+    setQualityLevels([]);
+    setQualityCurrentId(-1);
 
     const resumeKey = storageKey ? `mv_pos_${storageKey}` : null;
     const saved = resumeKey ? Number(localStorage.getItem(resumeKey)) || 0 : 0;
@@ -107,6 +120,18 @@ const NativePlayer = forwardRef(function NativePlayer(
             hls.on(Hls.Events.AUDIO_TRACK_SWITCHED, (_e, data) => {
               const list = tracksRef.current;
               setAudioCurrent(list.find((t) => t.id === data.id) || list[0] || null);
+            });
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+              const lv = hls.levels.map((l, i) => ({
+                id: i,
+                name: l.height ? `${l.height}p` : `${Math.round((l.bitrate || 0) / 1000)} kbps`,
+                height: l.height || 0,
+              }));
+              setQualityLevels(lv.length > 1 ? lv : []);
+              setQualityCurrentId(hls.autoLevelEnabled ? -1 : hls.currentLevel);
+            });
+            hls.on(Hls.Events.LEVEL_SWITCHED, (_e, data) => {
+              setQualityCurrentId(hls.autoLevelEnabled ? -1 : data.level);
             });
             hls.on(Hls.Events.ERROR, (_e, data) => {
               if (data.fatal) setError('Stream failed to load. Try another server.');
