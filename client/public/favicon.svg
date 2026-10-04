@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#0a0a0b"/>
+  <rect x="6.5" y="6.5" width="51" height="51" fill="none" stroke="#e5b45c" stroke-width="3.5"/>
+  <text x="32" y="33.5" font-family="'Arial Black','Segoe UI',Arial,sans-serif" font-size="24" font-weight="900" fill="#e5b45c" text-anchor="middle" dominant-baseline="middle">MV</text>
+</svg>
