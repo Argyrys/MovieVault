@@ -77,8 +77,8 @@ router.get('/dashboard', requireAdmin, dbRoute(async (req, res) => {
 
 router.get('/users', requireAdmin, dbRoute(async (req, res) => {
   const rows = await many(
-    `SELECT id, email, display_name, role, created_at, last_login_at
-     FROM users ORDER BY created_at ASC`
+    `SELECT id, email, display_name, role, is_prime, created_at, last_login_at
+     FROM users ORDER BY is_prime DESC, created_at ASC`
   );
   res.json({
     users: rows.map((r) => ({
@@ -86,6 +86,7 @@ router.get('/users', requireAdmin, dbRoute(async (req, res) => {
       email: r.email,
       displayName: r.display_name,
       role: r.role,
+      isPrime: r.is_prime,
       createdAt: r.created_at,
       lastLoginAt: r.last_login_at,
     })),
@@ -95,6 +96,12 @@ router.get('/users', requireAdmin, dbRoute(async (req, res) => {
 router.patch('/users/:id', requireAdmin, dbRoute(async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id)) return badRequest(res, 'Invalid user id.');
+
+  const target = await one(`SELECT id, is_prime FROM users WHERE id = $1`, [id]);
+  if (!target) return res.status(404).json({ error: 'NOT_FOUND', message: 'User not found.' });
+  if (target.is_prime) {
+    return res.status(403).json({ error: 'PRIME_PROTECTED', message: 'The prime admin cannot be changed or demoted.' });
+  }
   if (id === req.admin.sub) return badRequest(res, 'You cannot change your own role.');
 
   const role = String(req.body?.role || '');
@@ -114,10 +121,13 @@ router.patch('/users/:id', requireAdmin, dbRoute(async (req, res) => {
 router.delete('/users/:id', requireAdmin, dbRoute(async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id)) return badRequest(res, 'Invalid user id.');
-  if (id === req.admin.sub) return badRequest(res, 'You cannot delete your own account.');
 
-  const target = await one(`SELECT id, role FROM users WHERE id = $1`, [id]);
+  const target = await one(`SELECT id, role, is_prime FROM users WHERE id = $1`, [id]);
   if (!target) return res.status(404).json({ error: 'NOT_FOUND', message: 'User not found.' });
+  if (target.is_prime) {
+    return res.status(403).json({ error: 'PRIME_PROTECTED', message: 'The prime admin cannot be deleted.' });
+  }
+  if (id === req.admin.sub) return badRequest(res, 'You cannot delete your own account.');
 
   if (target.role === 'admin') {
     const admins = await one(`SELECT count(*) AS c FROM users WHERE role = 'admin'`);

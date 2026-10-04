@@ -259,22 +259,36 @@ export default function Admin() {
                 </strong>
                 <small>{u.email}</small>
               </div>
-              <span className={`admin-role ${u.role}`}>{u.role}</span>
+              <span className={`admin-role ${u.isPrime ? 'prime' : u.role}`}>
+                {u.isPrime ? 'prime' : u.role}
+              </span>
               <button
                 type="button"
                 className="admin-role-btn"
-                disabled={u.id === user.id}
+                disabled={u.id === user.id || u.isPrime}
                 onClick={() => setUserRole(u, u.role === 'admin' ? 'user' : 'admin')}
-                title={u.id === user.id ? 'You cannot change your own role' : undefined}
+                title={
+                  u.isPrime
+                    ? 'Prime admin is protected'
+                    : u.id === user.id
+                      ? 'You cannot change your own role'
+                      : undefined
+                }
               >
                 {u.role === 'admin' ? 'Demote to user' : 'Make admin'}
               </button>
               <button
                 type="button"
                 className="admin-role-btn admin-del"
-                disabled={u.id === user.id}
+                disabled={u.id === user.id || u.isPrime}
                 onClick={() => removeUser(u)}
-                title={u.id === user.id ? 'You cannot delete yourself' : undefined}
+                title={
+                  u.isPrime
+                    ? 'Prime admin cannot be deleted'
+                    : u.id === user.id
+                      ? 'You cannot delete yourself'
+                      : undefined
+                }
               >
                 Delete
               </button>

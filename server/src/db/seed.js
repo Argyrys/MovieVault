@@ -110,6 +110,20 @@ async function seed() {
       console.log(`[seed] Admin user verified: ${env.adminEmail}`);
     }
 
+    const primeCol = await client.query(
+      `SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'is_prime'`
+    );
+    if (primeCol.rows.length > 0) {
+      const prime = await client.query('SELECT id FROM users WHERE is_prime LIMIT 1');
+      if (prime.rows.length === 0) {
+        const upd = await client.query(
+          `UPDATE users SET is_prime = true WHERE lower(email) = lower($1) AND role = 'admin'`,
+          [env.adminEmail]
+        );
+        if (upd.rowCount > 0) console.log(`[seed] Prime admin set: ${env.adminEmail}`);
+      }
+    }
+
     await client.query('COMMIT');
 
     const counts = await client.query(`
