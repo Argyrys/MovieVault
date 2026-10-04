@@ -369,9 +369,11 @@ export default function Admin() {
         </div>
       </section>
 
-      <section className="admin-section">
-        <h2>Security</h2>
-        <form className="admin-pwform" onSubmit={changePassword}>
+      {user.isPrime && (
+        <section className="admin-section">
+          <h2>Security</h2>
+          <p className="admin-hint">Only the prime admin can change passwords.</p>
+          <form className="admin-pwform" onSubmit={changePassword}>
           <label>
             Current password
             <input
@@ -409,7 +411,8 @@ export default function Admin() {
             {pwBusy ? 'Saving…' : 'Change password'}
           </button>
         </form>
-      </section>
+        </section>
+      )}
     </div>
   );
 }

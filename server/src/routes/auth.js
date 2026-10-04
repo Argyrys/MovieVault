@@ -64,7 +64,7 @@ export function requireAuth(req, res, next) {
 }
 
 function publicUser(row) {
-  return { id: row.id, email: row.email, displayName: row.display_name, role: row.role };
+  return { id: row.id, email: row.email, displayName: row.display_name, role: row.role, isPrime: row.is_prime === true };
 }
 
 router.post('/register', registerLimiter, dbRoute(async (req, res) => {
@@ -83,9 +83,9 @@ router.post('/register', registerLimiter, dbRoute(async (req, res) => {
 
   const hash = await bcrypt.hash(password, 10);
   const user = await one(
-    `INSERT INTO users (email, password_hash, display_name, role)
-     VALUES ($1, $2, $3, 'user')
-     RETURNING id, email, display_name, role`,
+    `INSERT INTO users (email, password_hash, display_name, role, is_prime)
+     VALUES ($1, $2, $3, 'user', false)
+     RETURNING id, email, display_name, role, is_prime`,
     [email, hash, displayName]
   );
 
@@ -97,7 +97,7 @@ router.post('/login', loginLimiter, dbRoute(async (req, res) => {
   const password = String(req.body?.password || '');
   if (!email || !password) return res.status(400).json({ error: 'BAD_REQUEST', message: 'Email and password are required.' });
 
-  const user = await one(`SELECT id, email, password_hash, display_name, role FROM users WHERE lower(email) = $1`, [email]);
+  const user = await one(`SELECT id, email, password_hash, display_name, role, is_prime FROM users WHERE lower(email) = $1`, [email]);
   const ok = user ? await bcrypt.compare(password, user.password_hash) : false;
   if (!ok || !user) {
     return res.status(401).json({ error: 'INVALID_CREDENTIALS', message: 'Invalid email or password.' });
@@ -109,12 +109,17 @@ router.post('/login', loginLimiter, dbRoute(async (req, res) => {
 }));
 
 router.get('/me', requireAuth, dbRoute(async (req, res) => {
-  const user = await one(`SELECT id, email, display_name, role FROM users WHERE id = $1`, [req.auth.sub]);
+  const user = await one(`SELECT id, email, display_name, role, is_prime FROM users WHERE id = $1`, [req.auth.sub]);
   if (!user) return res.status(401).json({ error: 'UNAUTHORIZED', message: 'Account no longer exists.' });
   res.json(publicUser(user));
 }));
 
 router.post('/change-password', requireAuth, dbRoute(async (req, res) => {
+  const gate = await one(`SELECT is_prime FROM users WHERE id = $1`, [req.auth.sub]);
+  if (!gate || !gate.is_prime) {
+    return res.status(403).json({ error: 'FORBIDDEN', message: 'Only the prime admin can change passwords.' });
+  }
+
   const current = String(req.body?.currentPassword || '');
   const nextPw = String(req.body?.newPassword || '');
   if (!current || !nextPw) return res.status(400).json({ error: 'BAD_REQUEST', message: 'Current and new password are required.' });
