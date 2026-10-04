@@ -92,6 +92,7 @@ export const adminApi = {
   dashboard: () => adminFetch('/admin/dashboard'),
   users: () => adminFetch('/admin/users'),
   updateUser: (id, patch) => adminFetch(`/admin/users/${id}`, { method: 'PATCH', body: patch }),
+  deleteUser: (id) => adminFetch(`/admin/users/${id}`, { method: 'DELETE' }),
   providers: () => adminFetch('/admin/providers'),
   updateProvider: (id, patch) => adminFetch(`/admin/providers/${id}`, { method: 'PATCH', body: patch }),
   homeRows: () => adminFetch('/admin/home-rows'),

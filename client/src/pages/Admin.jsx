@@ -141,6 +141,17 @@ export default function Admin() {
     }
   };
 
+  const removeUser = async (u) => {
+    if (!window.confirm(`Delete ${u.email}? This cannot be undone.`)) return;
+    try {
+      await adminApi.deleteUser(u.id);
+      setUsers((list) => list.filter((x) => x.id !== u.id));
+      showFlash(`${u.email} deleted`);
+    } catch (err) {
+      showFlash(err.message);
+    }
+  };
+
   const changePassword = async (e) => {
     e.preventDefault();
     setPwError(null);
@@ -257,6 +268,15 @@ export default function Admin() {
                 title={u.id === user.id ? 'You cannot change your own role' : undefined}
               >
                 {u.role === 'admin' ? 'Demote to user' : 'Make admin'}
+              </button>
+              <button
+                type="button"
+                className="admin-role-btn admin-del"
+                disabled={u.id === user.id}
+                onClick={() => removeUser(u)}
+                title={u.id === user.id ? 'You cannot delete yourself' : undefined}
+              >
+                Delete
               </button>
             </div>
           ))}

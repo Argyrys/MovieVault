@@ -258,6 +258,17 @@
   cursor: default;
 }
 
+.admin-role-btn.admin-del {
+  border-color: rgba(255, 123, 123, 0.45);
+  color: #ff7b7b;
+}
+
+.admin-role-btn.admin-del:hover:not(:disabled) {
+  border-color: #ff7b7b;
+  color: #ff7b7b;
+  background: rgba(255, 123, 123, 0.1);
+}
+
 .admin-prio {
   display: flex;
   align-items: center;

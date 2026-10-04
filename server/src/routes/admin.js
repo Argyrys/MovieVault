@@ -111,6 +111,23 @@ router.patch('/users/:id', requireAdmin, dbRoute(async (req, res) => {
   });
 }));
 
+router.delete('/users/:id', requireAdmin, dbRoute(async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return badRequest(res, 'Invalid user id.');
+  if (id === req.admin.sub) return badRequest(res, 'You cannot delete your own account.');
+
+  const target = await one(`SELECT id, role FROM users WHERE id = $1`, [id]);
+  if (!target) return res.status(404).json({ error: 'NOT_FOUND', message: 'User not found.' });
+
+  if (target.role === 'admin') {
+    const admins = await one(`SELECT count(*) AS c FROM users WHERE role = 'admin'`);
+    if (Number(admins.c) <= 1) return badRequest(res, 'Cannot delete the last admin account.');
+  }
+
+  const row = await one(`DELETE FROM users WHERE id = $1 RETURNING id`, [id]);
+  res.json({ ok: true, deleted: row.id });
+}));
+
 router.get('/providers', requireAdmin, dbRoute(async (req, res) => {
   const rows = await many(
     `SELECT id, name, type, enabled, priority FROM providers ORDER BY priority ASC, id ASC`
