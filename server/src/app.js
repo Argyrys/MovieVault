@@ -11,6 +11,7 @@ import catalogRouter from './routes/catalog.js';
 import streamRouter from './routes/stream.js';
 import sitemapRouter from './routes/sitemap.js';
 import adminRouter from './routes/admin.js';
+import authRouter from './routes/auth.js';
 
 export function createApp() {
   const app = express();
@@ -30,6 +31,7 @@ export function createApp() {
   app.use('/api/image', imageRouter);
   app.use('/api/stream', streamRouter);
   app.use('/api', catalogRouter);
+  app.use('/api/auth', authRouter);
   app.use('/api/admin', adminRouter);
   app.use(sitemapRouter);
 

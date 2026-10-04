@@ -94,6 +94,22 @@ async function seed() {
       console.log(`[seed] Admin already exists: ${env.adminEmail}`);
     }
 
+    const userExists = await client.query('SELECT id FROM users WHERE lower(email) = lower($1)', [env.adminEmail]);
+    if (userExists.rows.length === 0) {
+      const hash = await bcrypt.hash(env.adminPassword, 10);
+      await client.query(
+        `INSERT INTO users (email, password_hash, display_name, role) VALUES ($1, $2, $3, 'admin')`,
+        [env.adminEmail, hash, 'Vault Keeper']
+      );
+      console.log(`[seed] Admin user created: ${env.adminEmail}`);
+    } else {
+      await client.query(
+        `UPDATE users SET role = 'admin' WHERE id = $1 AND role <> 'admin'`,
+        [userExists.rows[0].id]
+      );
+      console.log(`[seed] Admin user verified: ${env.adminEmail}`);
+    }
+
     await client.query('COMMIT');
 
     const counts = await client.query(`
@@ -101,7 +117,8 @@ async function seed() {
         (SELECT count(*) FROM genres) AS genres,
         (SELECT count(*) FROM home_rows) AS rows,
         (SELECT count(*) FROM providers) AS providers,
-        (SELECT count(*) FROM admins) AS admins
+        (SELECT count(*) FROM admins) AS admins,
+        (SELECT count(*) FROM users) AS users
     `);
     console.log('[seed] Done:', counts.rows[0]);
   } catch (err) {

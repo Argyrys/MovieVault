@@ -207,6 +207,34 @@
   transform: translateY(-7px) rotate(-45deg);
 }
 
+.nav-user {
+  color: var(--accent-bright);
+  font-size: 14px;
+  font-weight: 700;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  align-self: center;
+}
+
+.nav-signout {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.nav-signout:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 @media (max-width: 900px) {
   .nav-burger {
     display: flex;
@@ -233,6 +261,18 @@
   .nav-links a {
     padding: 12px 4px;
     font-size: 16px;
+  }
+
+  .nav-user {
+    align-self: flex-start;
+    padding: 12px 4px;
+    font-size: 16px;
+  }
+
+  .nav-signout {
+    align-self: flex-start;
+    margin-top: 8px;
+    padding: 9px 18px;
   }
 
   .nav-search input {

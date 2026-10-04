@@ -1,25 +1,11 @@
 import { Router } from 'express';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import rateLimit from 'express-rate-limit';
-import { env } from '../config/env.js';
 import { one, many } from '../db/pool.js';
 import { asyncHandler } from '../middleware/errors.js';
+import { requireAuth } from './auth.js';
 import { invalidateProviderCaches } from '../services/providers/registry.js';
 import { invalidateHomeCache } from './catalog.js';
 
 const router = Router();
-
-const TOKEN_TTL = '12h';
-const TOKEN_TTL_SECONDS = 12 * 60 * 60;
-
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60_000,
-  max: 15,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'RATE_LIMITED', message: 'Too many login attempts. Try again in 15 minutes.' },
-});
 
 function dbRoute(fn) {
   return asyncHandler(async (req, res, next) => {
@@ -35,65 +21,29 @@ function dbRoute(fn) {
   });
 }
 
-function signToken(admin) {
-  return jwt.sign(
-    { sub: admin.id, email: admin.email, name: admin.display_name },
-    env.jwtSecret,
-    { expiresIn: TOKEN_TTL }
-  );
-}
-
-function requireAdmin(req, res, next) {
-  const header = req.headers.authorization || '';
-  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
-  if (!token) {
-    return res.status(401).json({ error: 'UNAUTHORIZED', message: 'Login required.' });
-  }
-  try {
-    req.admin = jwt.verify(token, env.jwtSecret);
-    next();
-  } catch {
-    res.status(401).json({ error: 'INVALID_TOKEN', message: 'Session expired. Please log in again.' });
-  }
+async function requireAdmin(req, res, next) {
+  requireAuth(req, res, (err) => {
+    if (err) return next(err);
+    (async () => {
+      const user = await one(`SELECT id, role FROM users WHERE id = $1`, [req.auth.sub]);
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Admin access required.' });
+      }
+      req.admin = req.auth;
+      next();
+    })().catch((e) => {
+      if (e.code === 'DB_DISABLED') {
+        e.status = 503;
+        e.message = 'Database not connected. Set DATABASE_URL to enable the admin panel.';
+      }
+      next(e);
+    });
+  });
 }
 
 function badRequest(res, message) {
   return res.status(400).json({ error: 'BAD_REQUEST', message });
 }
-
-router.post('/login', loginLimiter, dbRoute(async (req, res) => {
-  const email = String(req.body?.email || '').trim().toLowerCase();
-  const password = String(req.body?.password || '');
-  if (!email || !password) return badRequest(res, 'Email and password are required.');
-
-  const admin = await one(`SELECT id, email, password_hash, display_name FROM admins WHERE lower(email) = $1`, [email]);
-  const ok = admin ? await bcrypt.compare(password, admin.password_hash) : false;
-  if (!ok || !admin) {
-    return res.status(401).json({ error: 'INVALID_CREDENTIALS', message: 'Invalid email or password.' });
-  }
-
-  one(`UPDATE admins SET last_login_at = now() WHERE id = $1`, [admin.id]).catch(() => {});
-
-  res.json({
-    token: signToken(admin),
-    expiresInSeconds: TOKEN_TTL_SECONDS,
-    admin: { id: admin.id, email: admin.email, displayName: admin.display_name },
-  });
-}));
-
-router.get('/me', requireAdmin, dbRoute(async (req, res) => {
-  const admin = await one(
-    `SELECT id, email, display_name, last_login_at FROM admins WHERE id = $1`,
-    [req.admin.sub]
-  );
-  if (!admin) return res.status(401).json({ error: 'UNAUTHORIZED', message: 'Account no longer exists.' });
-  res.json({
-    id: admin.id,
-    email: admin.email,
-    displayName: admin.display_name,
-    lastLoginAt: admin.last_login_at,
-  });
-}));
 
 router.get('/dashboard', requireAdmin, dbRoute(async (req, res) => {
   const [stats, rows24h, published] = await Promise.all([
@@ -104,7 +54,9 @@ router.get('/dashboard', requireAdmin, dbRoute(async (req, res) => {
         (SELECT count(*) FROM home_rows) AS rows,
         (SELECT count(*) FROM home_rows WHERE enabled) AS rows_enabled,
         (SELECT count(*) FROM admins) AS admins,
-        (SELECT count(*) FROM titles) AS titles
+        (SELECT count(*) FROM titles) AS titles,
+        (SELECT count(*) FROM users) AS users,
+        (SELECT count(*) FROM users WHERE role = 'admin') AS users_admin
     `),
     one(`SELECT count(*) FROM download_stats WHERE created_at > now() - interval '24 hours'`),
     one(`SELECT count(*) FROM titles WHERE status = 'published'`),
@@ -115,10 +67,47 @@ router.get('/dashboard', requireAdmin, dbRoute(async (req, res) => {
     providersEnabled: Number(stats.providers_enabled),
     rows: Number(stats.rows),
     rowsEnabled: Number(stats.rows_enabled),
-    admins: Number(stats.admins),
+    admins: Number(stats.users_admin),
+    users: Number(stats.users),
     titles: Number(stats.titles),
     titlesPublished: Number(published.count),
     downloads24h: Number(rows24h.count),
+  });
+}));
+
+router.get('/users', requireAdmin, dbRoute(async (req, res) => {
+  const rows = await many(
+    `SELECT id, email, display_name, role, created_at, last_login_at
+     FROM users ORDER BY created_at ASC`
+  );
+  res.json({
+    users: rows.map((r) => ({
+      id: r.id,
+      email: r.email,
+      displayName: r.display_name,
+      role: r.role,
+      createdAt: r.created_at,
+      lastLoginAt: r.last_login_at,
+    })),
+  });
+}));
+
+router.patch('/users/:id', requireAdmin, dbRoute(async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return badRequest(res, 'Invalid user id.');
+  if (id === req.admin.sub) return badRequest(res, 'You cannot change your own role.');
+
+  const role = String(req.body?.role || '');
+  if (role !== 'admin' && role !== 'user') return badRequest(res, 'role must be "admin" or "user".');
+
+  const row = await one(
+    `UPDATE users SET role = $1 WHERE id = $2 RETURNING id, email, display_name, role`,
+    [role, id]
+  );
+  if (!row) return res.status(404).json({ error: 'NOT_FOUND', message: 'User not found.' });
+
+  res.json({
+    user: { id: row.id, email: row.email, displayName: row.display_name, role: row.role },
   });
 }));
 
@@ -233,23 +222,6 @@ router.patch('/home-rows/:id', requireAdmin, dbRoute(async (req, res) => {
       enabled: row.enabled,
     },
   });
-}));
-
-router.post('/change-password', requireAdmin, dbRoute(async (req, res) => {
-  const current = String(req.body?.currentPassword || '');
-  const next = String(req.body?.newPassword || '');
-  if (!current || !next) return badRequest(res, 'Current and new password are required.');
-  if (next.length < 8) return badRequest(res, 'New password must be at least 8 characters.');
-
-  const admin = await one(`SELECT id, password_hash FROM admins WHERE id = $1`, [req.admin.sub]);
-  if (!admin) return res.status(401).json({ error: 'UNAUTHORIZED', message: 'Account no longer exists.' });
-
-  const ok = await bcrypt.compare(current, admin.password_hash);
-  if (!ok) return res.status(401).json({ error: 'INVALID_CREDENTIALS', message: 'Current password is incorrect.' });
-
-  const hash = await bcrypt.hash(next, 10);
-  await one(`UPDATE admins SET password_hash = $1 WHERE id = $2`, [hash, admin.id]);
-  res.json({ ok: true });
 }));
 
 export default router;

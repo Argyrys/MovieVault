@@ -1,6 +1,7 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api.js';
+import { useAuth } from '../context/AuthContext.jsx';
 import './Navbar.css';
 
 export default function Navbar() {
@@ -11,6 +12,7 @@ export default function Navbar() {
   const [showSug, setShowSug] = useState(false);
   const boxRef = useRef(null);
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -88,9 +90,33 @@ export default function Navbar() {
           <NavLink to="/browse?type=tv&lang=ko&genre=18" onClick={closeMenu}>
             K-Dramas
           </NavLink>
-          <NavLink to="/admin" onClick={closeMenu}>
-            Admin
-          </NavLink>
+          {user?.role === 'admin' && (
+            <NavLink to="/admin" onClick={closeMenu}>
+              Admin
+            </NavLink>
+          )}
+          {user ? (
+            <>
+              <span className="nav-user" title={user.email}>
+                {user.displayName}
+              </span>
+              <button
+                type="button"
+                className="nav-signout"
+                onClick={() => {
+                  logout();
+                  closeMenu();
+                  navigate('/');
+                }}
+              >
+                Sign out
+              </button>
+            </>
+          ) : (
+            <NavLink to="/login" onClick={closeMenu}>
+              Sign in
+            </NavLink>
+          )}
         </nav>
 
         <div className="nav-right">

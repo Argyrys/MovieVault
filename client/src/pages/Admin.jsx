@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { adminApi, setAdminToken } from '../lib/api.js';
+import { Link, Navigate } from 'react-router-dom';
+import { adminApi, authApi } from '../lib/api.js';
+import { useAuth } from '../context/AuthContext.jsx';
 import './Admin.css';
 
 function Toggle({ checked, onChange, label }) {
@@ -18,17 +20,12 @@ function Toggle({ checked, onChange, label }) {
 }
 
 export default function Admin() {
-  const [checking, setChecking] = useState(true);
-  const [admin, setAdmin] = useState(null);
-
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [loginError, setLoginError] = useState(null);
-  const [loginBusy, setLoginBusy] = useState(false);
+  const { user, ready, logout } = useAuth();
 
   const [dash, setDash] = useState(null);
   const [providers, setProviders] = useState([]);
   const [rows, setRows] = useState([]);
+  const [users, setUsers] = useState([]);
   const [dbMissing, setDbMissing] = useState(false);
   const [panelError, setPanelError] = useState(null);
   const [flash, setFlash] = useState(null);
@@ -49,64 +46,27 @@ export default function Admin() {
     setPanelError(null);
     setDbMissing(false);
     try {
-      const [d, p, r] = await Promise.all([
+      const [d, p, r, u] = await Promise.all([
         adminApi.dashboard(),
         adminApi.providers(),
         adminApi.homeRows(),
+        adminApi.users(),
       ]);
       setDash(d);
       setProviders(p.providers);
       setRows(r.rows);
+      setUsers(u.users);
       originalsRef.current = Object.fromEntries(r.rows.map((row) => [row.id, row.label]));
     } catch (err) {
-      if (err.status === 401) {
-        setAdmin(null);
-        return;
-      }
+      if (err.status === 401 || err.status === 403) return;
       if (err.status === 503) setDbMissing(true);
       setPanelError(err.message);
     }
   }, []);
 
   useEffect(() => {
-    let alive = true;
-    adminApi
-      .me()
-      .then((a) => alive && setAdmin(a))
-      .catch(() => {})
-      .finally(() => alive && setChecking(false));
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (admin) loadPanel();
-  }, [admin, loadPanel]);
-
-  const doLogin = async (e) => {
-    e.preventDefault();
-    setLoginBusy(true);
-    setLoginError(null);
-    try {
-      const res = await adminApi.login(loginEmail.trim(), loginPassword);
-      setAdminToken(res.token);
-      setAdmin({ id: res.admin.id, email: res.admin.email, displayName: res.admin.displayName });
-      setLoginPassword('');
-    } catch (err) {
-      setLoginError(err.message);
-    } finally {
-      setLoginBusy(false);
-    }
-  };
-
-  const logout = () => {
-    setAdminToken(null);
-    setAdmin(null);
-    setDash(null);
-    setProviders([]);
-    setRows([]);
-  };
+    if (user?.role === 'admin') loadPanel();
+  }, [user, loadPanel]);
 
   const toggleProvider = async (p) => {
     try {
@@ -171,6 +131,16 @@ export default function Admin() {
     }
   };
 
+  const setUserRole = async (u, role) => {
+    try {
+      const res = await adminApi.updateUser(u.id, { role });
+      setUsers((list) => list.map((x) => (x.id === u.id ? res.user : x)));
+      showFlash(`${u.email} is now ${role}`);
+    } catch (err) {
+      showFlash(err.message);
+    }
+  };
+
   const changePassword = async (e) => {
     e.preventDefault();
     setPwError(null);
@@ -180,7 +150,7 @@ export default function Admin() {
     }
     setPwBusy(true);
     try {
-      await adminApi.changePassword(pwCurrent, pwNext);
+      await authApi.changePassword(pwCurrent, pwNext);
       setPwCurrent('');
       setPwNext('');
       setPwConfirm('');
@@ -192,39 +162,22 @@ export default function Admin() {
     }
   };
 
-  if (checking) return <div className="page-state">Checking session…</div>;
+  if (!ready) return <div className="page-state">Checking session…</div>;
 
-  if (!admin) {
+  if (!user) {
+    return <Navigate to="/login?next=%2Fadmin" replace />;
+  }
+
+  if (user.role !== 'admin') {
     return (
       <div className="admin">
-        <form className="admin-login" onSubmit={doLogin}>
-          <span className="admin-badge">Admin</span>
-          <h1>Sign in</h1>
-          <label>
-            Email
-            <input
-              type="email"
-              autoComplete="username"
-              value={loginEmail}
-              onChange={(e) => setLoginEmail(e.target.value)}
-              required
-            />
-          </label>
-          <label>
-            Password
-            <input
-              type="password"
-              autoComplete="current-password"
-              value={loginPassword}
-              onChange={(e) => setLoginPassword(e.target.value)}
-              required
-            />
-          </label>
-          {loginError && <p className="admin-error">{loginError}</p>}
-          <button type="submit" className="admin-primary" disabled={loginBusy}>
-            {loginBusy ? 'Signing in…' : 'Sign in'}
-          </button>
-        </form>
+        <div className="auth-denied">
+          <h1>Admins only</h1>
+          <p>You’re signed in as {user.email}, which doesn’t have admin access.</p>
+          <Link to="/" className="admin-primary">
+            Back to home
+          </Link>
+        </div>
       </div>
     );
   }
@@ -235,7 +188,7 @@ export default function Admin() {
         <div>
           <span className="admin-badge">Admin</span>
           <h1>Control Panel</h1>
-          <p className="admin-sub">{admin.displayName || admin.email}</p>
+          <p className="admin-sub">{user.displayName || user.email}</p>
         </div>
         <button type="button" className="admin-ghost" onClick={logout}>
           Log out
@@ -268,17 +221,46 @@ export default function Admin() {
             <span>Home rows on</span>
           </div>
           <div className="admin-stat">
-            <strong>{dash ? dash.titles : '—'}</strong>
-            <span>Titles in DB</span>
+            <strong>{dash ? dash.users : '—'}</strong>
+            <span>Users</span>
           </div>
           <div className="admin-stat">
             <strong>{dash ? dash.downloads24h : '—'}</strong>
             <span>Downloads 24h</span>
           </div>
           <div className="admin-stat">
-            <strong>{dash ? dash.admins : '—'}</strong>
-            <span>Admins</span>
+            <strong>{dash ? dash.titles : '—'}</strong>
+            <span>Titles in DB</span>
           </div>
+        </div>
+      </section>
+
+      <section className="admin-section">
+        <h2>Users</h2>
+        <p className="admin-hint">Everyone who signs up becomes a user. Promote accounts to admin here.</p>
+        <div className="admin-list">
+          {users.map((u) => (
+            <div className="admin-item" key={u.id}>
+              <div className="admin-item-main admin-user-main">
+                <strong>
+                  {u.displayName}
+                  {u.id === user.id ? ' (you)' : ''}
+                </strong>
+                <small>{u.email}</small>
+              </div>
+              <span className={`admin-role ${u.role}`}>{u.role}</span>
+              <button
+                type="button"
+                className="admin-role-btn"
+                disabled={u.id === user.id}
+                onClick={() => setUserRole(u, u.role === 'admin' ? 'user' : 'admin')}
+                title={u.id === user.id ? 'You cannot change your own role' : undefined}
+              >
+                {u.role === 'admin' ? 'Demote to user' : 'Make admin'}
+              </button>
+            </div>
+          ))}
+          {users.length === 0 && !panelError && <p className="admin-empty">Loading…</p>}
         </div>
       </section>
 

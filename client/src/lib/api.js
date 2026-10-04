@@ -36,7 +36,7 @@ export const api = {
 
 const TOKEN_KEY = 'mv_admin_token';
 
-export function getAdminToken() {
+export function getToken() {
   try {
     return sessionStorage.getItem(TOKEN_KEY);
   } catch {
@@ -44,7 +44,7 @@ export function getAdminToken() {
   }
 }
 
-export function setAdminToken(token) {
+export function setToken(token) {
   try {
     if (token) sessionStorage.setItem(TOKEN_KEY, token);
     else sessionStorage.removeItem(TOKEN_KEY);
@@ -55,7 +55,7 @@ export function setAdminToken(token) {
 
 async function adminFetch(path, { method = 'GET', body } = {}) {
   const headers = {};
-  const token = getAdminToken();
+  const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
   if (body !== undefined) headers['Content-Type'] = 'application/json';
 
@@ -71,7 +71,7 @@ async function adminFetch(path, { method = 'GET', body } = {}) {
     /* ignore */
   }
   if (!res.ok) {
-    if (res.status === 401) setAdminToken(null);
+    if (res.status === 401) setToken(null);
     const err = new Error(data?.message || `Request failed (${res.status})`);
     err.status = res.status;
     throw err;
@@ -79,14 +79,21 @@ async function adminFetch(path, { method = 'GET', body } = {}) {
   return data;
 }
 
+export const authApi = {
+  register: (email, password, displayName) =>
+    adminFetch('/auth/register', { method: 'POST', body: { email, password, displayName } }),
+  login: (email, password) => adminFetch('/auth/login', { method: 'POST', body: { email, password } }),
+  me: () => adminFetch('/auth/me'),
+  changePassword: (currentPassword, newPassword) =>
+    adminFetch('/auth/change-password', { method: 'POST', body: { currentPassword, newPassword } }),
+};
+
 export const adminApi = {
-  login: (email, password) => adminFetch('/admin/login', { method: 'POST', body: { email, password } }),
-  me: () => adminFetch('/admin/me'),
   dashboard: () => adminFetch('/admin/dashboard'),
+  users: () => adminFetch('/admin/users'),
+  updateUser: (id, patch) => adminFetch(`/admin/users/${id}`, { method: 'PATCH', body: patch }),
   providers: () => adminFetch('/admin/providers'),
   updateProvider: (id, patch) => adminFetch(`/admin/providers/${id}`, { method: 'PATCH', body: patch }),
   homeRows: () => adminFetch('/admin/home-rows'),
   updateHomeRow: (id, patch) => adminFetch(`/admin/home-rows/${id}`, { method: 'PATCH', body: patch }),
-  changePassword: (currentPassword, newPassword) =>
-    adminFetch('/admin/change-password', { method: 'POST', body: { currentPassword, newPassword } }),
 };
