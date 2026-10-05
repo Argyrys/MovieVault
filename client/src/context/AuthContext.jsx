@@ -8,6 +8,27 @@ const AD_TAGS = [
   { zone: '11960359', src: 'https://n6wxm.com/vignette.min.js' },
 ];
 
+function hasPremiumCookie() {
+  try {
+    return /(?:^|;\s*)mv_role=premium(?:;|$)/.test(document.cookie);
+  } catch {
+    return false;
+  }
+}
+
+function setPremiumCookie() {
+  document.cookie = 'mv_role=premium; path=/; max-age=604800; SameSite=Lax';
+}
+
+function clearPremiumCookie() {
+  document.cookie = 'mv_role=; path=/; max-age=0; SameSite=Lax';
+}
+
+function isPremiumSession(user) {
+  if (user) return user.role === 'premium';
+  return hasPremiumCookie();
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [ready, setReady] = useState(false);
@@ -21,7 +42,10 @@ export function AuthProvider({ children }) {
     authApi
       .me()
       .then((u) => alive && setUser(u))
-      .catch(() => setToken(null))
+      .catch(() => {
+        setToken(null);
+        clearPremiumCookie();
+      })
       .finally(() => alive && setReady(true));
     return () => {
       alive = false;
@@ -29,8 +53,14 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    if (!ready || !user) return;
+    if (user.role === 'premium') setPremiumCookie();
+    else clearPremiumCookie();
+  }, [ready, user]);
+
+  useEffect(() => {
     if (!ready) return;
-    const wantsAds = user?.role !== 'premium';
+    const wantsAds = !isPremiumSession(user);
     AD_TAGS.forEach((t) => {
       const sel = `script[data-zone="${t.zone}"]`;
       if (!wantsAds) {
@@ -47,7 +77,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (!ready || !('serviceWorker' in navigator)) return;
-    const wantsAds = user?.role !== 'premium';
+    const wantsAds = !isPremiumSession(user);
     navigator.serviceWorker
       .getRegistrations()
       .then((regs) => {
@@ -84,6 +114,7 @@ export function AuthProvider({ children }) {
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
+    clearPremiumCookie();
   }, []);
 
   return (
