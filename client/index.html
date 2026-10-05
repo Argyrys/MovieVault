@@ -25,5 +25,36 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <!-- Monetag tags (premium users are excluded by the bootstrap below) -->
+    <!-- <script>(function(s){s.dataset.zone='11960356',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script> -->
+    <!-- <script>(function(s){s.dataset.zone='11960359',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script> -->
+    <script>
+      (function () {
+        var TAGS = [
+          { zone: '11960356', src: 'https://al5sm.com/tag.min.js' },
+          { zone: '11960359', src: 'https://n6wxm.com/vignette.min.js' }
+        ];
+        function go(user) {
+          if (user && user.role === 'premium') return;
+          TAGS.forEach(function (t) {
+            if (document.querySelector('script[data-zone="' + t.zone + '"]')) return;
+            var s = document.createElement('script');
+            s.dataset.zone = t.zone;
+            s.src = t.src;
+            (document.body || document.documentElement).appendChild(s);
+          });
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(function () {});
+          }
+        }
+        var tok = null;
+        try { tok = sessionStorage.getItem('mv_admin_token'); } catch (e) {}
+        if (!tok) { go(null); return; }
+        fetch('/api/auth/me', { headers: { Authorization: 'Bearer ' + tok } })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (u) { go(u); })
+          .catch(function () { go(null); });
+      })();
+    </script>
   </body>
 </html>
