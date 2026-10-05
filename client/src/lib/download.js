@@ -202,7 +202,7 @@ function saveBlob(chunks, type, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
-function sanitizeBase(name) {
+export function sanitizeBase(name) {
   const cleaned = String(name || '')
     // eslint-disable-next-line no-control-regex
     .replace(/[\\/:*?"<>|\u0000-\u001f]/g, '')
@@ -212,7 +212,7 @@ function sanitizeBase(name) {
   return cleaned || 'movievault-download';
 }
 
-export async function downloadSource({ sourceUrl, isHls, filenameBase, qualityHeight, onProgress, signal }) {
+export async function downloadSource({ sourceUrl, isHls, filenameBase, qualityHeight, onProgress, signal, fileHandle = null }) {
   const report = (p) => {
     try {
       onProgress?.(p);
@@ -222,69 +222,94 @@ export async function downloadSource({ sourceUrl, isHls, filenameBase, qualityHe
   };
   const base = sanitizeBase(filenameBase);
   const baseUrl = new URL(sourceUrl, location.href).toString();
-
-  if (!isHls) {
-    report({ phase: 'fetch', pct: 0 });
-    const res = await fetchOk(sourceUrl, signal);
-    const ct = res.headers.get('content-type') || '';
-    const total = Number(res.headers.get('content-length')) || 0;
-    const ext = ct.includes('webm') ? 'webm' : ct.includes('quicktime') ? 'mov' : 'mp4';
-    const reader = res.body.getReader();
-    const chunks = [];
-    let got = 0;
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-      got += value.byteLength;
-      if (total) report({ phase: 'fetch', pct: Math.min(99, Math.round((got / total) * 100)) });
+  const chunks = [];
+  let sink = null;
+  const emit = async (bytes) => {
+    if (sink) await sink.w.write(bytes);
+    else chunks.push(new Blob([bytes]));
+  };
+  const finish = async (filename, type) => {
+    if (sink) {
+      await sink.w.close();
+      const name = fileHandle.name;
+      sink = null;
+      report({ phase: 'done', pct: 100 });
+      return { filename: name };
     }
-    const filename = `${base}.${ext}`;
-    saveBlob(chunks, ct.startsWith('video/') ? ct : 'application/octet-stream', filename);
+    saveBlob(chunks, type, filename);
     report({ phase: 'done', pct: 100 });
     return { filename };
+  };
+
+  try {
+    if (!isHls) {
+      report({ phase: 'fetch', pct: 0 });
+      const res = await fetchOk(sourceUrl, signal);
+      const ct = res.headers.get('content-type') || '';
+      const total = Number(res.headers.get('content-length')) || 0;
+      const ext = ct.includes('webm') ? 'webm' : ct.includes('quicktime') ? 'mov' : 'mp4';
+      const filename = `${base}.${ext}`;
+      if (fileHandle) sink = { w: await fileHandle.createWritable() };
+      const reader = res.body.getReader();
+      let got = 0;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        await emit(value);
+        got += value.byteLength;
+        if (total) report({ phase: 'fetch', pct: Math.min(99, Math.round((got / total) * 100)) });
+      }
+      return await finish(filename, ct.startsWith('video/') ? ct : 'application/octet-stream');
+    }
+
+    report({ phase: 'plan', pct: 0 });
+    const masterText = await (await fetchOk(baseUrl, signal)).text();
+    let mediaText = masterText;
+    let mediaUrl = baseUrl;
+    if (masterText.includes('#EXT-X-STREAM-INF')) {
+      const variants = parseVariants(masterText, baseUrl);
+      if (!variants.length) throw new Error('No downloadable stream variants found');
+      const chosen = pickVariant(variants, qualityHeight);
+      mediaUrl = chosen.url;
+      mediaText = await (await fetchOk(chosen.url, signal)).text();
+    }
+
+    const plan = parseMediaPlaylist(mediaText, mediaUrl);
+    if (plan.unsupportedKey) throw new Error('This stream uses unsupported encryption');
+    if (!plan.segments.length) throw new Error('No downloadable segments found');
+    if (!plan.vod) throw new Error('Live streams cannot be downloaded');
+
+    const isMp4 = Boolean(plan.map) && plan.segments.some((s) => /\.m4s(\?|$)/i.test(s.url));
+    const filename = `${base}.${isMp4 ? 'mp4' : 'ts'}`;
+    if (fileHandle) sink = { w: await fileHandle.createWritable() };
+    const keyCache = new Map();
+    const total = plan.segments.length + (plan.map ? 1 : 0);
+    let doneCount = 0;
+
+    if (plan.map) {
+      await emit(await getSegmentBytes(plan.map, signal, keyCache));
+      doneCount += 1;
+      report({ phase: 'fetch', pct: Math.round((doneCount / total) * 100) });
+    }
+
+    for (let i = 0; i < plan.segments.length; i += CONCURRENCY) {
+      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+      const batch = plan.segments.slice(i, i + CONCURRENCY);
+      const parts = await Promise.all(batch.map((seg) => getSegmentBytes(seg, signal, keyCache)));
+      for (const part of parts) await emit(part);
+      doneCount += parts.length;
+      report({ phase: 'fetch', pct: Math.min(99, Math.round((doneCount / total) * 100)) });
+    }
+
+    return await finish(filename, 'application/octet-stream');
+  } catch (err) {
+    if (sink) {
+      try {
+        await sink.w.abort();
+      } catch {
+        /* ignore */
+      }
+    }
+    throw err;
   }
-
-  report({ phase: 'plan', pct: 0 });
-  const masterText = await (await fetchOk(baseUrl, signal)).text();
-  let mediaText = masterText;
-  let mediaUrl = baseUrl;
-  if (masterText.includes('#EXT-X-STREAM-INF')) {
-    const variants = parseVariants(masterText, baseUrl);
-    if (!variants.length) throw new Error('No downloadable stream variants found');
-    const chosen = pickVariant(variants, qualityHeight);
-    mediaUrl = chosen.url;
-    mediaText = await (await fetchOk(chosen.url, signal)).text();
-  }
-
-  const plan = parseMediaPlaylist(mediaText, mediaUrl);
-  if (plan.unsupportedKey) throw new Error('This stream uses unsupported encryption');
-  if (!plan.segments.length) throw new Error('No downloadable segments found');
-  if (!plan.vod) throw new Error('Live streams cannot be downloaded');
-
-  const isMp4 = Boolean(plan.map) && plan.segments.some((s) => /\.m4s(\?|$)/i.test(s.url));
-  const filename = `${base}.${isMp4 ? 'mp4' : 'ts'}`;
-  const keyCache = new Map();
-  const chunks = [];
-  const total = plan.segments.length + (plan.map ? 1 : 0);
-  let doneCount = 0;
-
-  if (plan.map) {
-    chunks.push(await getSegmentBytes(plan.map, signal, keyCache));
-    doneCount += 1;
-    report({ phase: 'fetch', pct: Math.round((doneCount / total) * 100) });
-  }
-
-  for (let i = 0; i < plan.segments.length; i += CONCURRENCY) {
-    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
-    const batch = plan.segments.slice(i, i + CONCURRENCY);
-    const parts = await Promise.all(batch.map((seg) => getSegmentBytes(seg, signal, keyCache)));
-    for (const part of parts) chunks.push(part);
-    doneCount += parts.length;
-    report({ phase: 'fetch', pct: Math.min(99, Math.round((doneCount / total) * 100)) });
-  }
-
-  saveBlob(chunks, 'application/octet-stream', filename);
-  report({ phase: 'done', pct: 100 });
-  return { filename };
 }

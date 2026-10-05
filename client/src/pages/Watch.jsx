@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api.js';
-import { downloadSource } from '../lib/download.js';
+import { downloadSource, sanitizeBase } from '../lib/download.js';
 import { langName } from '../lib/format.js';
 import NativePlayer from '../components/NativePlayer.jsx';
 import EmbedPlayer from '../components/EmbedPlayer.jsx';
@@ -203,6 +203,20 @@ export default function Watch() {
       return;
     }
     if (!dlMeta) return;
+
+    let fileHandle = null;
+    if (typeof window.showSaveFilePicker === 'function') {
+      try {
+        const guessExt = dlMeta.directs.some((s) => s.hls) ? '.ts' : '.mp4';
+        fileHandle = await window.showSaveFilePicker({
+          suggestedName: `${sanitizeBase(dlMeta.base)}${guessExt}`,
+        });
+      } catch (err) {
+        if (err?.name === 'AbortError') return;
+        fileHandle = null;
+      }
+    }
+
     setDlBusy(true);
     setDlState({ pct: 0 });
     const controller = new AbortController();
@@ -242,6 +256,7 @@ export default function Watch() {
         qualityHeight: dlMeta.qualityHeight,
         onProgress: (p) => setDlState({ pct: p.pct }),
         signal: controller.signal,
+        fileHandle,
       });
       setDlState(null);
     } catch (err) {
