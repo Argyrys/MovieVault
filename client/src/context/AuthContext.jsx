@@ -25,7 +25,7 @@ function clearPremiumCookie() {
 }
 
 function isPremiumSession(user) {
-  if (user) return user.role === 'premium';
+  if (user) return user.role === 'premium' || user.role === 'admin';
   return hasPremiumCookie();
 }
 
@@ -54,8 +54,25 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (!ready || !user) return;
-    if (user.role === 'premium') setPremiumCookie();
-    else clearPremiumCookie();
+    if (isPremiumSession(user)) {
+      setPremiumCookie();
+      const tagsLive = document.querySelector('script[data-zone]');
+      let reloaded = false;
+      try {
+        reloaded = sessionStorage.getItem('mv_af_reload') === '1';
+      } catch {}
+      if (tagsLive && !reloaded) {
+        try {
+          sessionStorage.setItem('mv_af_reload', '1');
+        } catch {}
+        window.location.reload();
+      }
+    } else {
+      clearPremiumCookie();
+      try {
+        sessionStorage.removeItem('mv_af_reload');
+      } catch {}
+    }
   }, [ready, user]);
 
   useEffect(() => {
@@ -115,6 +132,9 @@ export function AuthProvider({ children }) {
     setToken(null);
     setUser(null);
     clearPremiumCookie();
+    try {
+      sessionStorage.removeItem('mv_af_reload');
+    } catch {}
   }, []);
 
   return (
