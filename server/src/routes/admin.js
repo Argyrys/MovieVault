@@ -105,7 +105,9 @@ router.patch('/users/:id', requireAdmin, dbRoute(async (req, res) => {
   if (id === req.admin.sub) return badRequest(res, 'You cannot change your own role.');
 
   const role = String(req.body?.role || '');
-  if (role !== 'admin' && role !== 'user') return badRequest(res, 'role must be "admin" or "user".');
+  if (role !== 'admin' && role !== 'premium' && role !== 'user') {
+    return badRequest(res, 'role must be "admin", "premium" or "user".');
+  }
 
   const row = await one(
     `UPDATE users SET role = $1 WHERE id = $2 RETURNING id, email, display_name, role`,

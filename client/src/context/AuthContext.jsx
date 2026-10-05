@@ -23,6 +23,28 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!ready || !('serviceWorker' in navigator)) return;
+    const wantsAds = user?.role !== 'premium';
+    navigator.serviceWorker
+      .getRegistrations()
+      .then((regs) => {
+        const ours = regs.filter((r) => {
+          try {
+            return new URL(r.scope).origin === location.origin;
+          } catch {
+            return false;
+          }
+        });
+        if (wantsAds) {
+          if (!ours.length) navigator.serviceWorker.register('/sw.js').catch(() => {});
+        } else {
+          ours.forEach((r) => r.unregister().catch(() => {}));
+        }
+      })
+      .catch(() => {});
+  }, [ready, user]);
+
   const login = useCallback(async (email, password) => {
     const res = await authApi.login(email, password);
     setToken(res.token);

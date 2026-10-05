@@ -41,7 +41,7 @@ function dbRoute(fn) {
 }
 
 export function signToken(user) {
-  const role = user.role === 'admin' ? 'admin' : 'user';
+  const role = user.role === 'admin' || user.role === 'premium' ? user.role : 'user';
   return jwt.sign(
     { sub: user.id, email: user.email, name: user.display_name, role },
     env.jwtSecret,

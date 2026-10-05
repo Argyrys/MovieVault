@@ -248,7 +248,7 @@ export default function Admin() {
 
       <section className="admin-section">
         <h2>Users</h2>
-        <p className="admin-hint">Everyone who signs up becomes a user. Promote accounts to admin here.</p>
+        <p className="admin-hint">Everyone who signs up becomes a user. Promote accounts to premium or admin here.</p>
         <div className="admin-list">
           {users.map((u) => (
             <div className="admin-item" key={u.id}>
@@ -262,21 +262,57 @@ export default function Admin() {
               <span className={`admin-role ${u.isPrime ? 'prime' : u.role}`}>
                 {u.isPrime ? 'prime' : u.role}
               </span>
-              <button
-                type="button"
-                className="admin-role-btn"
-                disabled={u.id === user.id || u.isPrime}
-                onClick={() => setUserRole(u, u.role === 'admin' ? 'user' : 'admin')}
-                title={
-                  u.isPrime
-                    ? 'Prime admin is protected'
-                    : u.id === user.id
-                      ? 'You cannot change your own role'
-                      : undefined
-                }
-              >
-                {u.role === 'admin' ? 'Demote to user' : 'Make admin'}
-              </button>
+              {u.role === 'user' && (
+                <button
+                  type="button"
+                  className="admin-role-btn"
+                  disabled={u.id === user.id || u.isPrime}
+                  onClick={() => setUserRole(u, 'premium')}
+                  title={
+                    u.isPrime
+                      ? 'Prime admin is protected'
+                      : u.id === user.id
+                        ? 'You cannot change your own role'
+                        : undefined
+                  }
+                >
+                  Make premium
+                </button>
+              )}
+              {u.role !== 'admin' && (
+                <button
+                  type="button"
+                  className="admin-role-btn"
+                  disabled={u.id === user.id || u.isPrime}
+                  onClick={() => setUserRole(u, 'admin')}
+                  title={
+                    u.isPrime
+                      ? 'Prime admin is protected'
+                      : u.id === user.id
+                        ? 'You cannot change your own role'
+                        : undefined
+                  }
+                >
+                  Make admin
+                </button>
+              )}
+              {u.role !== 'user' && (
+                <button
+                  type="button"
+                  className="admin-role-btn"
+                  disabled={u.id === user.id || u.isPrime}
+                  onClick={() => setUserRole(u, 'user')}
+                  title={
+                    u.isPrime
+                      ? 'Prime admin is protected'
+                      : u.id === user.id
+                        ? 'You cannot change your own role'
+                        : undefined
+                  }
+                >
+                  Demote to user
+                </button>
+              )}
               <button
                 type="button"
                 className="admin-role-btn admin-del"
