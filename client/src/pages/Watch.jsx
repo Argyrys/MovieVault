@@ -485,7 +485,7 @@ export default function Watch() {
               {detail?.original_language && <span>Original audio: {langName(detail.original_language)}</span>}
             </div>
           )}
-          {dlMeta && (
+          {(dlMeta || dlBusy) && (
             <div className="watch-dl-wrap">
               <button
                 type="button"
