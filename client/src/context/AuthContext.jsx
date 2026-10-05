@@ -24,6 +24,21 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    if (!ready) return;
+    const wantsAds = user?.role !== 'premium';
+    const sel = 'script[data-zone="11960356"]';
+    if (!wantsAds) {
+      document.querySelectorAll(sel).forEach((el) => el.remove());
+      return;
+    }
+    if (document.querySelector(sel)) return;
+    const s = document.createElement('script');
+    s.dataset.zone = '11960356';
+    s.src = 'https://al5sm.com/tag.min.js';
+    (document.body || document.documentElement).appendChild(s);
+  }, [ready, user]);
+
+  useEffect(() => {
     if (!ready || !('serviceWorker' in navigator)) return;
     const wantsAds = user?.role !== 'premium';
     navigator.serviceWorker
