@@ -236,6 +236,15 @@
 }
 
 @media (max-width: 900px) {
+  .navbar-inner {
+    gap: 12px;
+    padding: 0 16px;
+  }
+
+  .nav-right {
+    gap: 10px;
+  }
+
   .nav-burger {
     display: flex;
   }
@@ -276,14 +285,20 @@
   }
 
   .nav-search input {
-    width: 150px;
+    width: min(150px, 30vw);
   }
 
   .nav-search input:focus {
-    width: 180px;
+    width: min(180px, 33vw);
   }
 
   .nav-sug {
     width: min(320px, calc(100vw - 48px));
+  }
+}
+
+@media (max-width: 380px) {
+  .brand-name {
+    display: none;
   }
 }
