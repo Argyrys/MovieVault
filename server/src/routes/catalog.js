@@ -15,6 +15,7 @@ export function invalidateHomeCache() {
 }
 
 const DEFAULT_HOME_ROWS = [
+  { key: 'latest', label: 'Latest Releases', source: 'tmdb:latest', media_type: null },
   { key: 'trending', label: 'Trending Now', source: 'tmdb:trending', media_type: null },
   { key: 'popular', label: 'Popular', source: 'tmdb:popular', media_type: null },
   { key: 'top_rated', label: 'Top Rated', source: 'tmdb:top_rated', media_type: null },
@@ -51,6 +52,21 @@ function mergeByPopularity(a, b) {
   return [...a, ...b].sort((x, y) => y.popularity - x.popularity).slice(0, 20);
 }
 
+function mergeLatest(items) {
+  const today = new Date().toISOString().slice(0, 10);
+  const seen = new Set();
+  const out = [];
+  for (const item of items) {
+    if (!item.release_date || item.release_date > today) continue;
+    const k = `${item.type}:${item.tmdb_id}`;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(item);
+  }
+  out.sort((a, b) => b.release_date.localeCompare(a.release_date));
+  return out.slice(0, 30);
+}
+
 async function curatedRow(row) {
   const rows = await many(
     `SELECT t.media_type, t.tmdb_id, t.title, t.overview, t.poster_path, t.backdrop_path,
@@ -67,6 +83,13 @@ async function curatedRow(row) {
 
 async function fetchRowItems(row) {
   switch (row.source) {
+    case 'tmdb:latest': {
+      const [m, t] = await Promise.all([
+        tmdb.discover('movie', { sort: 'primary_release_date.desc' }),
+        tmdb.discover('tv', { sort: 'first_air_date.desc' }),
+      ]);
+      return mergeLatest([...m.results, ...t.results]);
+    }
     case 'tmdb:trending':
       return (await tmdb.trending(row.media_type || 'all')).results;
     case 'tmdb:popular': {

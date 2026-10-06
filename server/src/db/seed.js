@@ -19,6 +19,7 @@ const TV_GENRES = [
 ];
 
 const HOME_ROWS = [
+  { key: 'latest', label: 'Latest Releases', source: 'tmdb:latest', media_type: null, sort_order: 9 },
   { key: 'trending', label: 'Trending Now', source: 'tmdb:trending', media_type: null, sort_order: 10 },
   { key: 'popular', label: 'Popular', source: 'tmdb:popular', media_type: null, sort_order: 20 },
   { key: 'top_rated', label: 'Top Rated', source: 'tmdb:top_rated', media_type: null, sort_order: 30 },
