@@ -44,7 +44,6 @@ export function AuthProvider({ children }) {
       .then((u) => alive && setUser(u))
       .catch(() => {
         setToken(null);
-        clearPremiumCookie();
       })
       .finally(() => alive && setReady(true));
     return () => {
@@ -66,6 +65,10 @@ export function AuthProvider({ children }) {
           sessionStorage.setItem('mv_af_reload', '1');
         } catch {}
         window.location.reload();
+      } else if (!tagsLive) {
+        try {
+          sessionStorage.removeItem('mv_af_reload');
+        } catch {}
       }
     } else {
       clearPremiumCookie();
@@ -84,6 +87,9 @@ export function AuthProvider({ children }) {
         document.querySelectorAll(sel).forEach((el) => el.remove());
         return;
       }
+      try {
+        sessionStorage.removeItem('mv_af_reload');
+      } catch {}
       if (document.querySelector(sel)) return;
       const s = document.createElement('script');
       s.dataset.zone = t.zone;
