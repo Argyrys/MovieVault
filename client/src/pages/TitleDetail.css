@@ -1,6 +1,6 @@
 .detail {
   position: relative;
-  padding-top: 68px;
+  padding-top: var(--nav-height);
 }
 
 .detail-bg {

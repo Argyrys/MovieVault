@@ -32,8 +32,15 @@ button {
   cursor: pointer;
 }
 
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
 .app-main {
   min-height: calc(100vh - var(--nav-height));
+  min-height: calc(100dvh - var(--nav-height));
 }
 
 .container {
