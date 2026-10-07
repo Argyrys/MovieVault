@@ -24,26 +24,44 @@ function ScrollToTop() {
 }
 
 export default function App() {
-  const [introDone, setIntroDone] = useState(false);
+  const location = useLocation();
+  const [introDone, setIntroDone] = useState(() => {
+    try {
+      return sessionStorage.getItem('mv_intro_seen') === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  const finishIntro = () => {
+    try {
+      sessionStorage.setItem('mv_intro_seen', '1');
+    } catch {
+      /* ignore */
+    }
+    setIntroDone(true);
+  };
 
   return (
     <AuthProvider>
-      {!introDone && <IntroSplash onDone={() => setIntroDone(true)} />}
+      {!introDone && <IntroSplash onDone={finishIntro} />}
       <Navbar />
       <main className="app-main">
         <ScrollToTop />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/browse" element={<Browse />} />
-          <Route path="/search" element={<Search />} />
-          <Route path="/title/:type/:id" element={<TitleDetail />} />
-          <Route path="/watch/:type/:id" element={<Watch />} />
-          <Route path="/admin/*" element={<Admin />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <div key={location.pathname} className="page-fade">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/browse" element={<Browse />} />
+            <Route path="/search" element={<Search />} />
+            <Route path="/title/:type/:id" element={<TitleDetail />} />
+            <Route path="/watch/:type/:id" element={<Watch />} />
+            <Route path="/admin/*" element={<Admin />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </div>
         <Footer />
       </main>
     </AuthProvider>

@@ -43,6 +43,24 @@ textarea {
   min-height: calc(100dvh - var(--nav-height));
 }
 
+/* Subtle enter transition on route change */
+.page-fade {
+  animation: pageIn 0.18s ease;
+}
+
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-fade {
+    animation: none;
+  }
+}
+
 .container {
   max-width: var(--content-max);
   margin: 0 auto;
