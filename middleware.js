@@ -1,4 +1,8 @@
-const TAG_SRCS = ['https://al5sm.com/tag.min.js', 'https://n6wxm.com/vignette.min.js'];
+const TAG_SRCS = [
+  'https://al5sm.com/tag.min.js',
+  'https://n6wxm.com/vignette.min.js',
+  'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2053351556528753',
+];
 
 function esc(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

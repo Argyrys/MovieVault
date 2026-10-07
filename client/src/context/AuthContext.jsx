@@ -55,7 +55,9 @@ export function AuthProvider({ children }) {
     if (!ready || !user) return;
     if (isPremiumSession(user)) {
       setPremiumCookie();
-      const tagsLive = document.querySelector('script[data-zone]');
+      const tagsLive = document.querySelector(
+        'script[data-zone], script[src*="adsbygoogle.js"], ins.adsbygoogle, iframe[src*="googlesyndication"]'
+      );
       let reloaded = false;
       try {
         reloaded = sessionStorage.getItem('mv_af_reload') === '1';
@@ -85,6 +87,11 @@ export function AuthProvider({ children }) {
       const sel = `script[data-zone="${t.zone}"]`;
       if (!wantsAds) {
         document.querySelectorAll(sel).forEach((el) => el.remove());
+        document
+          .querySelectorAll(
+            'script[src*="adsbygoogle.js"], ins.adsbygoogle, iframe[src*="googlesyndication"], iframe[src*="googleads.g.doubleclick.net"]'
+          )
+          .forEach((el) => el.remove());
         return;
       }
       try {
