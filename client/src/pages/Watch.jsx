@@ -21,6 +21,8 @@ export default function Watch() {
   const [selected, setSelected] = useState(null);
   const [userPicked, setUserPicked] = useState(false);
   const [error, setError] = useState(null);
+  const [streamError, setStreamError] = useState(null);
+  const [retryTick, setRetryTick] = useState(0);
   const [trailer, setTrailer] = useState(false);
   const isTv = type === 'tv';
 
@@ -29,11 +31,13 @@ export default function Watch() {
   const [audioTracks, setAudioTracks] = useState([]);
   const [audioCurrent, setAudioCurrent] = useState(null);
   const [audioOpen, setAudioOpen] = useState(false);
+  const [audioSide, setAudioSide] = useState('right');
 
   const qualityMenuRef = useRef(null);
   const [qualityLevels, setQualityLevels] = useState([]);
   const [qualityCurrentId, setQualityCurrentId] = useState(-1);
   const [qualityOpen, setQualityOpen] = useState(false);
+  const [qualitySide, setQualitySide] = useState('right');
 
   const dlAbortRef = useRef(null);
   const [dlBusy, setDlBusy] = useState(false);
@@ -94,6 +98,7 @@ export default function Watch() {
     let alive = true;
     setDetail(null);
     setDetailReady(false);
+    setError(null);
     api
       .title(type, id)
       .then((d) => alive && setDetail(d))
@@ -102,7 +107,7 @@ export default function Watch() {
     return () => {
       alive = false;
     };
-  }, [type, id]);
+  }, [type, id, retryTick]);
 
   useEffect(() => {
     if (!isTv) return;
@@ -122,17 +127,18 @@ export default function Watch() {
     setServers(null);
     setSelected(null);
     setUserPicked(false);
+    setStreamError(null);
     api
       .stream(type, id, isTv ? { season, episode } : undefined)
       .then((d) => {
         if (!alive) return;
         setServers(d.servers);
       })
-      .catch((e) => alive && setError(e.message));
+      .catch((e) => alive && setStreamError(e.message));
     return () => {
       alive = false;
     };
-  }, [type, id, isTv, season, episode]);
+  }, [type, id, isTv, season, episode, retryTick]);
 
   useEffect(() => {
     if (userPicked || !servers?.length || !detailReady) return;
@@ -268,7 +274,22 @@ export default function Watch() {
     }
   };
 
-  if (error && !detail) return <div className="page-state">Failed to load: {error}</div>;
+  const retryAll = () => {
+    setError(null);
+    setStreamError(null);
+    setRetryTick((t) => t + 1);
+  };
+
+  if (error && !detail) {
+    return (
+      <div className="page-state">
+        <div>Failed to load: {error}</div>
+        <button type="button" className="btn btn-ghost" onClick={retryAll}>
+          Try again
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="watch">
@@ -284,7 +305,26 @@ export default function Watch() {
       </div>
 
       <div className="watch-stage">
-        {!servers && <div className="player-state">Loading servers…</div>}
+        {!detailReady && (
+          <div className="player-state" role="status">
+            <span className="player-spinner" aria-hidden="true" />
+            <span>Loading…</span>
+          </div>
+        )}
+        {detailReady && !servers && !streamError && (
+          <div className="player-state" role="status">
+            <span className="player-spinner" aria-hidden="true" />
+            <span>Loading servers…</span>
+          </div>
+        )}
+        {detailReady && !servers && streamError && (
+          <div className="player-state" role="alert">
+            <span>⚠ Couldn’t load servers — {streamError}</span>
+            <button type="button" className="player-retry" onClick={retryAll}>
+              Try again
+            </button>
+          </div>
+        )}
         {servers?.length === 0 && (
           <div className="player-state">No servers available for this title right now.</div>
         )}
@@ -307,14 +347,20 @@ export default function Watch() {
 
       <div className="watch-panels">
         <div className="watch-info">
-          <h1>{detail?.title}</h1>
+          <h1>
+            {detail?.title || (
+              <span className="watch-title-skel" aria-hidden="true">
+                <span className="sk-line sk-w50 sk-h-title" />
+              </span>
+            )}
+          </h1>
           {isTv ? (
             <p className="watch-eplabel">
               Season {season} · Episode {episode}
               {epData?.title ? ` — ${epData.title}` : ''}
             </p>
           ) : (
-            <p className="watch-eplabel">{detail?.year}</p>
+            detail?.year && <p className="watch-eplabel">{detail.year}</p>
           )}
 
           <div className="server-list" role="group" aria-label="Servers">
@@ -343,13 +389,21 @@ export default function Watch() {
                   aria-expanded={audioOpen}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (!audioOpen) {
+                      const r = e.currentTarget.getBoundingClientRect();
+                      setAudioSide(r.left - 24 >= 195 ? 'right' : 'left');
+                    }
                     setAudioOpen((o) => !o);
                   }}
                 >
                   🔊 {audioCurrent?.name || 'Audio'} <span className="audio-caret">▾</span>
                 </button>
                 {audioOpen && (
-                  <ul className="audio-list" role="menu">
+                  <ul
+                    className="audio-list"
+                    role="menu"
+                    style={audioSide === 'left' ? { left: 0, right: 'auto' } : undefined}
+                  >
                     {audioTracks.map((t) => (
                       <li key={t.id}>
                         <button
@@ -380,13 +434,21 @@ export default function Watch() {
                   aria-expanded={qualityOpen}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (!qualityOpen) {
+                      const r = e.currentTarget.getBoundingClientRect();
+                      setQualitySide(r.left - 24 >= 195 ? 'right' : 'left');
+                    }
                     setQualityOpen((o) => !o);
                   }}
                 >
                   ⛶ {qualityName} <span className="audio-caret">▾</span>
                 </button>
                 {qualityOpen && (
-                  <ul className="quality-list" role="menu">
+                  <ul
+                    className="quality-list"
+                    role="menu"
+                    style={qualitySide === 'left' ? { left: 0, right: 'auto' } : undefined}
+                  >
                     <li key="auto">
                       <button
                         type="button"

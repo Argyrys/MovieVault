@@ -6,11 +6,9 @@
   background: linear-gradient(180deg, transparent 0%, var(--bg) 12%);
 }
 
-.page-state {
-  min-height: 60vh;
-  display: grid;
-  place-items: center;
-  color: var(--text-muted);
-  padding: 120px 24px;
-  text-align: center;
+@media (max-width: 640px) {
+  .home-rows {
+    margin-top: -4vh;
+    padding-top: 4vh;
+  }
 }

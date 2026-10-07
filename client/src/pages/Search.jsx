@@ -20,6 +20,7 @@ export default function Search() {
     }
     let alive = true;
     setLoading(true);
+    setError(null);
     api
       .search(q, 1)
       .then((d) => alive && setData(d))

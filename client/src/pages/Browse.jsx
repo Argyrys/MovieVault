@@ -40,6 +40,7 @@ export default function Browse() {
   useEffect(() => {
     let alive = true;
     setLoading(true);
+    setError(null);
     api
       .browse({ type, genre, year, lang, sort, page })
       .then((d) => alive && setData(d))

@@ -12,8 +12,9 @@ export default function TitleCard({ item, rank }) {
       onClick={() => navigate(`/title/${item.type}/${item.tmdb_id}`)}
       title={item.title}
     >
-      {rank != null && <span className="card-rank">{rank}</span>}
+      {rank != null && <span className="sr-only">Rank {rank}</span>}
       <div className="card-poster">
+        {rank != null && <span className="card-rank" aria-hidden="true">{rank}</span>}
         {item.poster_url ? (
           <img src={item.poster_url} alt={item.title} loading="lazy" />
         ) : (

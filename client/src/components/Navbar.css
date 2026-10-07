@@ -235,7 +235,7 @@
   color: var(--accent);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .navbar-inner {
     gap: 12px;
     padding: 0 16px;
