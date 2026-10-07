@@ -14,6 +14,7 @@ const NativePlayer = forwardRef(function NativePlayer(
   const [audioCurrent, setAudioCurrent] = useState(null);
   const [qualityLevels, setQualityLevels] = useState([]);
   const [qualityCurrentId, setQualityCurrentId] = useState(-1);
+  const [muted, setMuted] = useState(true);
 
   useImperativeHandle(
     ref,
@@ -53,6 +54,9 @@ const NativePlayer = forwardRef(function NativePlayer(
     let hls = null;
     let cancelled = false;
     setError(null);
+    video.muted = true;
+    video.volume = 1;
+    setMuted(true);
     setAudioTracks([]);
     setAudioCurrent(null);
     tracksRef.current = [];
@@ -160,24 +164,13 @@ const NativePlayer = forwardRef(function NativePlayer(
     };
     video.addEventListener('timeupdate', onTime);
 
-    // audio must never start muted; if the browser blocks audible autoplay,
-    // the first click anywhere starts it with sound
-    video.muted = false;
-    video.volume = 1;
-    const onFirstGesture = () => {
-      if (video.paused) {
-        video.muted = false;
-        video.volume = 1;
-        video.play().catch(() => {});
-      }
-      document.removeEventListener('pointerdown', onFirstGesture);
-    };
-    document.addEventListener('pointerdown', onFirstGesture);
+    const onVolume = () => setMuted(video.muted);
+    video.addEventListener('volumechange', onVolume);
 
     return () => {
       cancelled = true;
       video.removeEventListener('timeupdate', onTime);
-      document.removeEventListener('pointerdown', onFirstGesture);
+      video.removeEventListener('volumechange', onVolume);
       if (video.audioTracks) {
         video.audioTracks.removeEventListener('change', onNativeChange);
         video.audioTracks.removeEventListener('addtrack', onNativeChange);
@@ -192,6 +185,15 @@ const NativePlayer = forwardRef(function NativePlayer(
 
   const defaultSubIdx = (subtitles || []).findIndex((t) => /^english$/i.test(t.label || ''));
 
+  const unmute = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = false;
+    video.volume = 1;
+    video.play().catch(() => {});
+    setMuted(false);
+  };
+
   return (
     <div className="player-shell">
       <video
@@ -199,6 +201,7 @@ const NativePlayer = forwardRef(function NativePlayer(
         className="native-player"
         controls
         autoPlay
+        muted
         poster={poster}
         playsInline
       >
@@ -214,6 +217,11 @@ const NativePlayer = forwardRef(function NativePlayer(
         ))}
       </video>
       {error && <div className="player-error">⚠ {error}</div>}
+      {muted && !error && (
+        <button type="button" className="sound-prompt" onClick={unmute}>
+          🔊 Tap for sound
+        </button>
+      )}
     </div>
   );
 });

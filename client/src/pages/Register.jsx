@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import useDocTitle from '../lib/useDocTitle.js';
 import './Auth.css';
 
 export default function Register() {
+  useDocTitle('Create account');
   const { register } = useAuth();
   const navigate = useNavigate();
 
@@ -65,7 +67,7 @@ export default function Register() {
             required
           />
         </label>
-        {error && <p className="auth-error">{error}</p>}
+        {error && <p className="auth-error" role="alert">{error}</p>}
         <button type="submit" className="auth-primary" disabled={busy}>
           {busy ? 'Creating…' : 'Create account'}
         </button>

@@ -1,6 +1,8 @@
 import './Privacy.css';
+import useDocTitle from '../lib/useDocTitle.js';
 
 export default function Privacy() {
+  useDocTitle('Privacy Policy');
   return (
     <div className="privacy-page">
       <h1>Privacy Policy</h1>

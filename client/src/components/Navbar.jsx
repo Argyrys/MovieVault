@@ -152,6 +152,7 @@ export default function Navbar() {
           <button
             className="nav-burger"
             aria-label="Menu"
+            aria-expanded={menuOpen}
             onClick={() => setMenuOpen((v) => !v)}
           >
             <span />

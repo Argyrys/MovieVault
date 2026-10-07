@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api.js';
 import TitleCard from '../components/TitleCard.jsx';
 import { SkeletonGrid } from '../components/Skeleton.jsx';
+import useDocTitle from '../lib/useDocTitle.js';
 import './Browse.css';
 
 const SORTS = [
@@ -16,6 +17,7 @@ const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: CURRENT_YEAR - 1949 }, (_, i) => CURRENT_YEAR - i);
 
 export default function Browse() {
+  useDocTitle('Browse');
   const [params, setParams] = useSearchParams();
   const [data, setData] = useState(null);
   const [genres, setGenres] = useState([]);

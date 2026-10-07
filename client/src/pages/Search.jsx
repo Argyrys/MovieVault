@@ -3,11 +3,13 @@ import { useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api.js';
 import TitleCard from '../components/TitleCard.jsx';
 import { SkeletonGrid } from '../components/Skeleton.jsx';
+import useDocTitle from '../lib/useDocTitle.js';
 import './Browse.css';
 
 export default function Search() {
   const [params] = useSearchParams();
   const q = params.get('q') || '';
+  useDocTitle(q ? `Search “${q}”` : 'Search');
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);

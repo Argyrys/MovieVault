@@ -6,6 +6,7 @@ import TrailerModal from '../components/TrailerModal.jsx';
 import { SkeletonDetail } from '../components/Skeleton.jsx';
 import { formatRuntime, scoreBadge, clamp } from '../lib/format.js';
 import { onImgError } from '../lib/img.js';
+import useDocTitle from '../lib/useDocTitle.js';
 import './TitleDetail.css';
 
 export default function TitleDetail() {
@@ -15,6 +16,7 @@ export default function TitleDetail() {
   const [error, setError] = useState(null);
   const [reload, setReload] = useState(0);
   const [trailer, setTrailer] = useState(null);
+  useDocTitle(data?.title ? `${data.title}${data.year ? ` (${data.year})` : ''}` : null);
 
   useEffect(() => {
     let alive = true;
@@ -31,7 +33,7 @@ export default function TitleDetail() {
 
   if (error)
     return (
-      <div className="page-state">
+      <div className="page-state" role="alert">
         <p>Failed to load title: {error}</p>
         <button className="btn btn-primary" onClick={() => setReload((r) => r + 1)}>
           Try again

@@ -6,6 +6,7 @@ import { langName } from '../lib/format.js';
 import NativePlayer from '../components/NativePlayer.jsx';
 import EmbedPlayer from '../components/EmbedPlayer.jsx';
 import TrailerModal from '../components/TrailerModal.jsx';
+import useDocTitle from '../lib/useDocTitle.js';
 import './Watch.css';
 
 export default function Watch() {
@@ -27,6 +28,7 @@ export default function Watch() {
   const [epTick, setEpTick] = useState(0);
   const [trailer, setTrailer] = useState(false);
   const isTv = type === 'tv';
+  useDocTitle(detail ? `Watching ${detail.title}` : null);
 
   const playerRef = useRef(null);
   const audioMenuRef = useRef(null);
@@ -285,7 +287,7 @@ export default function Watch() {
 
   if (error && !detail) {
     return (
-      <div className="page-state">
+      <div className="page-state" role="alert">
         <div>Failed to load: {error}</div>
         <button type="button" className="btn btn-ghost" onClick={retryAll}>
           Try again

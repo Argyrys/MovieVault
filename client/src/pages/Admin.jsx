@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { adminApi, authApi } from '../lib/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import useDocTitle from '../lib/useDocTitle.js';
 import './Admin.css';
 
 function Toggle({ checked, onChange, label }) {
@@ -20,6 +21,7 @@ function Toggle({ checked, onChange, label }) {
 }
 
 export default function Admin() {
+  useDocTitle('Admin');
   const { user, ready, logout } = useAuth();
 
   const [dash, setDash] = useState(null);
@@ -442,7 +444,7 @@ export default function Admin() {
               required
             />
           </label>
-          {pwError && <p className="admin-error">{pwError}</p>}
+          {pwError && <p className="admin-error" role="alert">{pwError}</p>}
           <button type="submit" className="admin-primary" disabled={pwBusy}>
             {pwBusy ? 'Saving…' : 'Change password'}
           </button>

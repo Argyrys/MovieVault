@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
+import useDocTitle from '../lib/useDocTitle.js';
 
 export default function NotFound() {
+  useDocTitle('Page not found');
   return (
     <div className="scaffold-note">
       <span className="phase-badge">404</span>

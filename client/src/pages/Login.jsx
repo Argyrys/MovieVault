@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import useDocTitle from '../lib/useDocTitle.js';
 import './Auth.css';
 
 export default function Login() {
+  useDocTitle('Sign in');
   const { login } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -53,7 +55,7 @@ export default function Login() {
             required
           />
         </label>
-        {error && <p className="auth-error">{error}</p>}
+        {error && <p className="auth-error" role="alert">{error}</p>}
         <button type="submit" className="auth-primary" disabled={busy}>
           {busy ? 'Signing in…' : 'Sign in'}
         </button>
