@@ -5,6 +5,7 @@ import TitleRow from '../components/TitleRow.jsx';
 import TrailerModal from '../components/TrailerModal.jsx';
 import { SkeletonDetail } from '../components/Skeleton.jsx';
 import { formatRuntime, scoreBadge, clamp } from '../lib/format.js';
+import { onImgError } from '../lib/img.js';
 import './TitleDetail.css';
 
 export default function TitleDetail() {
@@ -12,6 +13,7 @@ export default function TitleDetail() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
+  const [reload, setReload] = useState(0);
   const [trailer, setTrailer] = useState(null);
 
   useEffect(() => {
@@ -25,9 +27,17 @@ export default function TitleDetail() {
     return () => {
       alive = false;
     };
-  }, [type, id]);
+  }, [type, id, reload]);
 
-  if (error) return <div className="page-state">Failed to load title: {error}</div>;
+  if (error)
+    return (
+      <div className="page-state">
+        <p>Failed to load title: {error}</p>
+        <button className="btn btn-primary" onClick={() => setReload((r) => r + 1)}>
+          Try again
+        </button>
+      </div>
+    );
   if (!data) return <SkeletonDetail />;
 
   const director = data.crew?.find((c) => c.job === 'Director');
@@ -48,7 +58,18 @@ export default function TitleDetail() {
       <div className="detail-fade" />
 
       <div className="detail-head">
-        <img className="detail-poster" src={data.poster_url} alt={data.title} />
+        {data.poster_url ? (
+          <img
+            className="detail-poster"
+            src={data.poster_url}
+            alt={data.title}
+            onError={onImgError}
+          />
+        ) : (
+          <div className="detail-poster detail-poster--ph" aria-hidden="true">
+            MV
+          </div>
+        )}
         <div className="detail-info">
           <span className="hero-kind">{data.type === 'tv' ? 'SERIES' : 'MOVIE'}</span>
           <h1>{data.title}</h1>
@@ -103,7 +124,7 @@ export default function TitleDetail() {
             {data.cast.slice(0, 14).map((c) => (
               <div className="cast-card" key={`${c.id}-${c.character}`}>
                 {c.profile_url ? (
-                  <img src={c.profile_url} alt={c.name} loading="lazy" />
+                  <img src={c.profile_url} alt={c.name} loading="lazy" onError={onImgError} />
                 ) : (
                   <div className="cast-noimg">{c.name.slice(0, 1)}</div>
                 )}

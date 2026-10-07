@@ -5,6 +5,14 @@
   margin: 0 auto;
 }
 
+.sk-hero {
+  min-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-bottom: 9vh;
+}
+
 .sk-detail {
   padding-top: 110px;
 }
@@ -53,10 +61,14 @@
 .sk-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 20px;
-  padding: 0 24px;
-  max-width: var(--content-max);
-  margin: 0 auto;
+  gap: 22px;
+}
+
+@media (max-width: 560px) {
+  .sk-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px;
+  }
 }
 
 .sk-grid .sk-card {

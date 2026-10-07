@@ -169,6 +169,22 @@
   font-size: 13px;
 }
 
+.mini-retry {
+  background: none;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.mini-retry:hover {
+  background: rgba(229, 180, 92, 0.12);
+}
+
 .server-list .audio-menu,
 .server-list .quality-menu {
   position: relative;

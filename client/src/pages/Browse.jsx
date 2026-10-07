@@ -21,6 +21,7 @@ export default function Browse() {
   const [genres, setGenres] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [reload, setReload] = useState(0);
 
   const type = params.get('type') || '';
   const genre = params.get('genre') || '';
@@ -41,6 +42,7 @@ export default function Browse() {
     let alive = true;
     setLoading(true);
     setError(null);
+    setData(null);
     api
       .browse({ type, genre, year, lang, sort, page })
       .then((d) => alive && setData(d))
@@ -49,7 +51,7 @@ export default function Browse() {
     return () => {
       alive = false;
     };
-  }, [type, genre, year, lang, sort, page]);
+  }, [type, genre, year, lang, sort, page, reload]);
 
   useEffect(() => {
     let alive = true;
@@ -76,7 +78,9 @@ export default function Browse() {
       <div className="browse-head">
         <h1>Browse</h1>
         <p>
-          {data ? `${data.total_results.toLocaleString()} titles` : 'Loading catalog…'}
+          {data
+            ? `${(data.total_results ?? data.results?.length ?? 0).toLocaleString()} titles`
+            : 'Loading catalog…'}
         </p>
       </div>
 
@@ -156,7 +160,14 @@ export default function Browse() {
         </aside>
 
         <div className="browse-main">
-          {error && <div className="page-state">Failed to load: {error}</div>}
+          {error && (
+            <div className="browse-error" role="alert">
+              <p>Failed to load: {error}</p>
+              <button className="btn btn-primary" onClick={() => setReload((r) => r + 1)}>
+                Try again
+              </button>
+            </div>
+          )}
           {loading && <SkeletonGrid count={15} />}
           {!loading && !error && data?.results?.length === 0 && (
             <div className="page-state">No titles match these filters.</div>

@@ -44,6 +44,16 @@
   border: 1px solid var(--border);
 }
 
+.detail-poster--ph {
+  display: grid;
+  place-items: center;
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  font-weight: 800;
+  font-size: 42px;
+  font-family: var(--font-display);
+}
+
 .detail-info h1 {
   font-family: var(--font-display);
   font-size: clamp(32px, 5vw, 58px);

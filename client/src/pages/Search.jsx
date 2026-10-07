@@ -11,6 +11,7 @@ export default function Search() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
     if (!q) {
@@ -21,6 +22,7 @@ export default function Search() {
     let alive = true;
     setLoading(true);
     setError(null);
+    setData(null);
     api
       .search(q, 1)
       .then((d) => alive && setData(d))
@@ -29,18 +31,29 @@ export default function Search() {
     return () => {
       alive = false;
     };
-  }, [q]);
+  }, [q, reload]);
 
   return (
     <div className="browse">
       <div className="browse-head">
         <h1>Search</h1>
         <p>
-          {q ? `Results for “${q}”${data ? ` — ${data.total_results.toLocaleString()} found` : ''}` : 'Type in the search box above.'}
+          {q
+            ? `Results for “${q}”${
+                data ? ` — ${(data.total_results ?? data.results?.length ?? 0).toLocaleString()} found` : ''
+              }`
+            : 'Type in the search box above.'}
         </p>
       </div>
 
-      {error && <div className="page-state">Search failed: {error}</div>}
+      {error && (
+        <div className="browse-error" role="alert">
+          <p>Search failed: {error}</p>
+          <button className="btn btn-primary" onClick={() => setReload((r) => r + 1)}>
+            Try again
+          </button>
+        </div>
+      )}
       {loading && <SkeletonGrid count={12} />}
       {!loading && !error && q && data?.results?.length === 0 && (
         <div className="page-state">No titles found for “{q}”.</div>

@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { scoreBadge } from '../lib/format.js';
+import { onImgError } from '../lib/img.js';
 import './TitleCard.css';
 
 export default function TitleCard({ item, rank }) {
@@ -16,7 +17,7 @@ export default function TitleCard({ item, rank }) {
       <div className="card-poster">
         {rank != null && <span className="card-rank" aria-hidden="true">{rank}</span>}
         {item.poster_url ? (
-          <img src={item.poster_url} alt={item.title} loading="lazy" />
+          <img src={item.poster_url} alt={item.title} loading="lazy" onError={onImgError} />
         ) : (
           <div className="card-noimg">{item.title}</div>
         )}

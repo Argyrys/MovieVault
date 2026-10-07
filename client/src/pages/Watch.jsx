@@ -23,6 +23,8 @@ export default function Watch() {
   const [error, setError] = useState(null);
   const [streamError, setStreamError] = useState(null);
   const [retryTick, setRetryTick] = useState(0);
+  const [episodesError, setEpisodesError] = useState(null);
+  const [epTick, setEpTick] = useState(0);
   const [trailer, setTrailer] = useState(false);
   const isTv = type === 'tv';
 
@@ -113,14 +115,15 @@ export default function Watch() {
     if (!isTv) return;
     let alive = true;
     setEpisodes(null);
+    setEpisodesError(null);
     api
       .season(id, season)
       .then((d) => alive && setEpisodes(d))
-      .catch(() => alive && setEpisodes({ episodes: [] }));
+      .catch((e) => alive && setEpisodesError(e.message));
     return () => {
       alive = false;
     };
-  }, [isTv, id, season]);
+  }, [isTv, id, season, epTick]);
 
   useEffect(() => {
     let alive = true;
@@ -515,6 +518,18 @@ export default function Watch() {
                     <span className="ep-title">{ep.title || `Episode ${ep.episode_number}`}</span>
                   </button>
                 ))}
+                {episodesError && (
+                  <p className="server-empty">
+                    ⚠ Couldn’t load episodes.{' '}
+                    <button
+                      type="button"
+                      className="mini-retry"
+                      onClick={() => setEpTick((t) => t + 1)}
+                    >
+                      Try again
+                    </button>
+                  </p>
+                )}
                 {episodes && episodes.episodes?.length === 0 && (
                   <p className="server-empty">No episodes found for this season.</p>
                 )}
