@@ -12,6 +12,7 @@ import Watch from './pages/Watch.jsx';
 import Admin from './pages/Admin.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
+import Premium from './pages/Premium.jsx';
 import Privacy from './pages/Privacy.jsx';
 import NotFound from './pages/NotFound.jsx';
 
@@ -58,6 +59,7 @@ export default function App() {
             <Route path="/admin/*" element={<Admin />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/premium" element={<Premium />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

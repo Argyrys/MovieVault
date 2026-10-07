@@ -12,6 +12,7 @@ import streamRouter from './routes/stream.js';
 import sitemapRouter from './routes/sitemap.js';
 import adminRouter from './routes/admin.js';
 import authRouter from './routes/auth.js';
+import billingRouter from './routes/billing.js';
 import downloadRouter from './routes/download.js';
 
 export function createApp() {
@@ -33,6 +34,7 @@ export function createApp() {
   app.use('/api/stream', streamRouter);
   app.use('/api', catalogRouter);
   app.use('/api/auth', authRouter);
+  app.use('/api/billing', billingRouter);
   app.use('/api/admin', adminRouter);
   app.use('/api/download', downloadRouter);
   app.use(sitemapRouter);

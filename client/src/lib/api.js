@@ -88,6 +88,11 @@ export const authApi = {
     adminFetch('/auth/change-password', { method: 'POST', body: { currentPassword, newPassword } }),
 };
 
+export const billingApi = {
+  plans: () => get('/billing/plans'),
+  checkout: (planId) => adminFetch('/billing/checkout', { method: 'POST', body: { planId } }),
+};
+
 export const adminApi = {
   dashboard: () => adminFetch('/admin/dashboard'),
   users: () => adminFetch('/admin/users'),

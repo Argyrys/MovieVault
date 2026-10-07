@@ -237,6 +237,29 @@
   color: var(--accent);
 }
 
+.nav-links a.nav-premium-link {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.nav-links a.nav-premium-link:hover,
+.nav-links a.nav-premium-link.active {
+  color: var(--accent-bright);
+}
+
+.nav-premium-badge {
+  background: var(--accent-gradient);
+  color: #14100a;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 5px 11px;
+  border-radius: 999px;
+  white-space: nowrap;
+  align-self: center;
+}
+
 @media (max-width: 1100px) {
   .navbar-inner {
     gap: 12px;
@@ -278,6 +301,11 @@
     align-self: flex-start;
     padding: 12px 4px;
     font-size: 16px;
+  }
+
+  .nav-premium-badge {
+    align-self: flex-start;
+    margin-top: 10px;
   }
 
   .nav-signout {

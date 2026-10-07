@@ -141,6 +141,11 @@ export function AuthProvider({ children }) {
     return res.user;
   }, []);
 
+  const applySession = useCallback((res) => {
+    setToken(res.token);
+    setUser(res.user);
+  }, []);
+
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
@@ -151,7 +156,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, ready, login, register, logout }}>
+    <AuthContext.Provider value={{ user, ready, login, register, logout, applySession }}>
       {children}
     </AuthContext.Provider>
   );

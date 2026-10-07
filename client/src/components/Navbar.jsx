@@ -90,6 +90,9 @@ export default function Navbar() {
           <NavLink to="/browse?type=tv&lang=ko&genre=18" onClick={closeMenu}>
             K-Dramas
           </NavLink>
+          <NavLink to="/premium" className="nav-premium-link" onClick={closeMenu}>
+            Premium
+          </NavLink>
           {user?.role === 'admin' && (
             <NavLink to="/admin" onClick={closeMenu}>
               Admin
@@ -97,6 +100,11 @@ export default function Navbar() {
           )}
           {user ? (
             <>
+              {user.role === 'premium' && (
+                <span className="nav-premium-badge" title="Premium member">
+                  ✦ Premium
+                </span>
+              )}
               <span className="nav-user" title={user.email}>
                 {user.displayName}
               </span>

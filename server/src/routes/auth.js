@@ -63,8 +63,31 @@ export function requireAuth(req, res, next) {
   }
 }
 
-function publicUser(row) {
-  return { id: row.id, email: row.email, displayName: row.display_name, role: row.role, isPrime: row.is_prime === true };
+export function publicUser(row) {
+  return {
+    id: row.id,
+    email: row.email,
+    displayName: row.display_name,
+    role: row.role,
+    isPrime: row.is_prime === true,
+    premiumExpiresAt: row.premium_expires_at || null,
+  };
+}
+
+export function normalizePremium(row) {
+  if (
+    row &&
+    row.role === 'premium' &&
+    row.premium_expires_at &&
+    new Date(row.premium_expires_at).getTime() <= Date.now()
+  ) {
+    row.role = 'user';
+    row.premium_expires_at = null;
+    one(`UPDATE users SET role = 'user', premium_expires_at = NULL WHERE id = $1 AND role = 'premium'`, [row.id]).catch(
+      () => {}
+    );
+  }
+  return row;
 }
 
 router.post('/register', registerLimiter, dbRoute(async (req, res) => {
@@ -85,7 +108,7 @@ router.post('/register', registerLimiter, dbRoute(async (req, res) => {
   const user = await one(
     `INSERT INTO users (email, password_hash, display_name, role, is_prime)
      VALUES ($1, $2, $3, 'user', false)
-     RETURNING id, email, display_name, role, is_prime`,
+     RETURNING id, email, display_name, role, is_prime, premium_expires_at`,
     [email, hash, displayName]
   );
 
@@ -97,11 +120,15 @@ router.post('/login', loginLimiter, dbRoute(async (req, res) => {
   const password = String(req.body?.password || '');
   if (!email || !password) return res.status(400).json({ error: 'BAD_REQUEST', message: 'Email and password are required.' });
 
-  const user = await one(`SELECT id, email, password_hash, display_name, role, is_prime FROM users WHERE lower(email) = $1`, [email]);
+  const user = await one(
+    `SELECT id, email, password_hash, display_name, role, is_prime, premium_expires_at FROM users WHERE lower(email) = $1`,
+    [email]
+  );
   const ok = user ? await bcrypt.compare(password, user.password_hash) : false;
   if (!ok || !user) {
     return res.status(401).json({ error: 'INVALID_CREDENTIALS', message: 'Invalid email or password.' });
   }
+  normalizePremium(user);
 
   one(`UPDATE users SET last_login_at = now() WHERE id = $1`, [user.id]).catch(() => {});
 
@@ -109,8 +136,12 @@ router.post('/login', loginLimiter, dbRoute(async (req, res) => {
 }));
 
 router.get('/me', requireAuth, dbRoute(async (req, res) => {
-  const user = await one(`SELECT id, email, display_name, role, is_prime FROM users WHERE id = $1`, [req.auth.sub]);
+  const user = await one(
+    `SELECT id, email, display_name, role, is_prime, premium_expires_at FROM users WHERE id = $1`,
+    [req.auth.sub]
+  );
   if (!user) return res.status(401).json({ error: 'UNAUTHORIZED', message: 'Account no longer exists.' });
+  normalizePremium(user);
   res.json(publicUser(user));
 }));
 
