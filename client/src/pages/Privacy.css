@@ -1,6 +1,6 @@
 .privacy-page {
   max-width: 780px;
-  margin: calc(var(--nav-height) + 40px) auto 60px;
+  margin: calc(var(--nav-height) + env(safe-area-inset-top) + 40px) auto 60px;
   padding: 0 24px;
   color: var(--text-muted);
   line-height: 1.7;

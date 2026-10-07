@@ -1,7 +1,7 @@
 .admin {
   max-width: 940px;
   margin: 0 auto;
-  padding: 86px 24px 60px;
+  padding: calc(86px + env(safe-area-inset-top)) 24px 60px;
 }
 
 .admin-head {

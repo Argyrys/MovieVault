@@ -1,7 +1,7 @@
 .browse {
   max-width: var(--content-max);
   margin: 0 auto;
-  padding: 110px 24px 40px;
+  padding: calc(110px + env(safe-area-inset-top)) 24px 40px;
 }
 
 .browse-head {
@@ -59,7 +59,7 @@
 
 .seg button {
   flex: 1;
-  padding: 9px 4px;
+  padding: 12px 6px;
   background: none;
   border: none;
   color: var(--text-muted);

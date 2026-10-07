@@ -147,13 +147,13 @@ textarea {
   place-items: center;
   gap: 14px;
   color: var(--text-muted);
-  padding: 120px 24px;
+  padding: calc(120px + env(safe-area-inset-top)) 24px;
   text-align: center;
 }
 
 @media (max-width: 640px) {
   .page-state {
-    padding: 72px 20px;
+    padding: calc(72px + env(safe-area-inset-top)) 20px;
   }
 }
 

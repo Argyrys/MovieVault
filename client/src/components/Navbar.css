@@ -4,6 +4,7 @@
   left: 0;
   right: 0;
   z-index: 200;
+  padding-top: env(safe-area-inset-top);
   background: linear-gradient(180deg, rgba(10, 10, 11, 0.9) 0%, rgba(10, 10, 11, 0) 100%);
   transition: background 0.3s ease, box-shadow 0.3s ease;
 }
@@ -31,6 +32,8 @@
   text-decoration: none;
   color: var(--text);
   font-weight: 800;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .brand-mark {
@@ -183,7 +186,7 @@
   gap: 5px;
   background: none;
   border: none;
-  padding: 6px;
+  padding: 14px 11px;
 }
 
 .nav-burger span {
@@ -250,7 +253,7 @@
 
   .nav-links {
     position: fixed;
-    top: var(--nav-height);
+    top: calc(var(--nav-height) + env(safe-area-inset-top));
     left: 0;
     right: 0;
     background: rgba(10, 10, 11, 0.98);
