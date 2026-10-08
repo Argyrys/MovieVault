@@ -3,12 +3,13 @@ import { langName } from '../lib/format.js';
 import './Player.css';
 
 const NativePlayer = forwardRef(function NativePlayer(
-  { src, poster, storageKey, onAudioInfo, onQualityInfo, isHls, subtitles },
+  { src, poster, storageKey, onAudioInfo, onQualityInfo, isHls, subtitles, onStreamError },
   ref
 ) {
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
   const tracksRef = useRef([]);
+  const onStreamErrorRef = useRef(onStreamError);
   const [error, setError] = useState(null);
   const [audioTracks, setAudioTracks] = useState([]);
   const [audioCurrent, setAudioCurrent] = useState(null);
@@ -47,6 +48,10 @@ const NativePlayer = forwardRef(function NativePlayer(
   useEffect(() => {
     onQualityInfo?.(qualityLevels, qualityCurrentId);
   }, [qualityLevels, qualityCurrentId, onQualityInfo]);
+
+  useEffect(() => {
+    onStreamErrorRef.current = onStreamError;
+  }, [onStreamError]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -138,19 +143,31 @@ const NativePlayer = forwardRef(function NativePlayer(
               setQualityCurrentId(hls.autoLevelEnabled ? -1 : data.level);
             });
             hls.on(Hls.Events.ERROR, (_e, data) => {
-              if (data.fatal) setError('Stream failed to load. Try another server.');
+              if (data.fatal) {
+                setError('Stream failed to load. Try another server.');
+                onStreamErrorRef.current?.();
+              }
             });
           } else {
             video.src = src;
-            video.addEventListener('error', () => setError('Stream failed to load. Try another server.'));
+            video.addEventListener('error', () => {
+              setError('Stream failed to load. Try another server.');
+              onStreamErrorRef.current?.();
+            });
           }
         })
         .catch(() => {
-          if (!cancelled) setError('Stream player failed to load. Try another server.');
+          if (!cancelled) {
+            setError('Stream player failed to load. Try another server.');
+            onStreamErrorRef.current?.();
+          }
         });
     } else {
       video.src = src;
-      video.addEventListener('error', () => setError('Stream failed to load. Try another server.'));
+      video.addEventListener('error', () => {
+        setError('Stream failed to load. Try another server.');
+        onStreamErrorRef.current?.();
+      });
     }
 
     let last = 0;

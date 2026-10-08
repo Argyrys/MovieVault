@@ -46,6 +46,7 @@ export default function Watch() {
   const dlAbortRef = useRef(null);
   const [dlBusy, setDlBusy] = useState(false);
   const [dlState, setDlState] = useState(null);
+  const triedStreamsRef = useRef(new Set());
 
   const handleAudioInfo = useCallback((tracks, current) => {
     setAudioTracks(tracks || []);
@@ -133,6 +134,7 @@ export default function Watch() {
     setSelected(null);
     setUserPicked(false);
     setStreamError(null);
+    triedStreamsRef.current = new Set();
     api
       .stream(type, id, isTv ? { season, episode } : undefined)
       .then((d) => {
@@ -144,6 +146,15 @@ export default function Watch() {
       alive = false;
     };
   }, [type, id, isTv, season, episode, retryTick]);
+
+  const handleStreamError = useCallback(() => {
+    if (!servers?.length || !selected || selected.kind === 'embed') return;
+    const directs = servers.filter((s) => s.kind !== 'embed');
+    if (directs.length < 2) return;
+    triedStreamsRef.current.add(selected.id);
+    const next = directs.find((s) => !triedStreamsRef.current.has(s.id));
+    if (next) setSelected(next);
+  }, [servers, selected]);
 
   useEffect(() => {
     if (userPicked || !servers?.length || !detailReady) return;
@@ -346,6 +357,7 @@ export default function Watch() {
               onQualityInfo={handleQualityInfo}
               isHls={selected.hls}
               subtitles={selected.subtitles}
+              onStreamError={handleStreamError}
             />
           ))}
       </div>
@@ -376,6 +388,7 @@ export default function Watch() {
                 className={`server-chip ${selected?.id === s.id ? 'active' : ''}`}
                 onClick={() => {
                   setUserPicked(true);
+                  triedStreamsRef.current = new Set();
                   setSelected(s);
                 }}
                 title={s.quality || s.id}
