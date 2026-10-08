@@ -7,13 +7,13 @@ const BASE = 'https://core.vidzee.wtf';
 // they are mislabelled and were the English playback users reported. dcloud/tik
 // are honest English fallbacks ("Auto"). Capped at ~7.4s to stay under the
 // registry's 8s provider budget.
-// All three are returned as separate servers: some upstreams (e.g. v4's host)
-// reject cloud egress, so clients must be able to fall back to the next one
-// for both playback and download.
+// All returned servers are exposed as separate entries: some upstreams
+// (e.g. v4's host) reject cloud egress, so clients must be able to fall back
+// to the next one for both playback and download. `tik` was removed: its
+// playlist points at TikTok thumbnail objects (PNGs), not video.
 const SERVERS = [
   { id: 'v4:Hindi', key: 'v4', name: 'Hindi', timeout: 4000 },
   { id: 'dcloud', key: 'dcloud', name: 'English', timeout: 1600 },
-  { id: 'tik', key: 'tik', name: 'English 2', timeout: 1200 },
 ];
 
 async function fetchStream(server, { type, tmdbId, season, episode }, deadline) {
