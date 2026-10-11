@@ -706,9 +706,15 @@ export const metadata = {
     const key = 'simkl:sitemap:entries';
     const hit = cache.get(key);
     if (hit) return hit;
-    const [mv, tv, hindi] = await Promise.all([
+    // Cover every file-backed index the UI surfaces: week (popular),
+    // month (top-rated + browse default sort), today (trending), hindi row.
+    const [mvWeek, tvWeek, mvMonth, tvMonth, mvToday, tvToday, hindi] = await Promise.all([
       weekFile('movies'),
       weekFile('tv'),
+      monthFile('movies'),
+      monthFile('tv'),
+      trendingFile('movies'),
+      trendingFile('tv'),
       hindiRow(),
     ]);
     const seen = new Set();
@@ -721,8 +727,12 @@ export const metadata = {
       seen.add(k);
       out.push({ type, tmdb_id: n.tmdb_id, release_date: n.release_date });
     };
-    for (const i of mv) push(i, 'movie');
-    for (const i of tv) push(i, 'tv');
+    for (const i of mvWeek) push(i, 'movie');
+    for (const i of tvWeek) push(i, 'tv');
+    for (const i of mvMonth) push(i, 'movie');
+    for (const i of tvMonth) push(i, 'tv');
+    for (const i of mvToday) push(i, 'movie');
+    for (const i of tvToday) push(i, 'tv');
     for (const i of hindi.results || []) {
       const k = `movie:${i.tmdb_id}`;
       if (!seen.has(k)) {
@@ -730,7 +740,7 @@ export const metadata = {
         out.push({ type: 'movie', tmdb_id: i.tmdb_id, release_date: i.release_date });
       }
     }
-    const res = out.slice(0, 1200);
+    const res = out.slice(0, 3000);
     cache.set(key, res, LIST_TTL);
     return res;
   },
