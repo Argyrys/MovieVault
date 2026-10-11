@@ -14,9 +14,6 @@ export default async function middleware(req) {
   if (path.startsWith('/api/')) return;
   if (/\.[a-z0-9]{2,6}$/.test(path)) return;
 
-  const cookies = req.headers.get('cookie') || '';
-  const premium = /(?:^|;\s*)mv_role=(?:premium|admin)(?:;|$)/.test(cookies);
-
   const headers = new Headers(req.headers);
   headers.set('x-mv-mw', '1');
   headers.delete('if-none-match');
@@ -32,17 +29,18 @@ export default async function middleware(req) {
     return new Response(res.body, { status: res.status, statusText: res.statusText, headers: passthru });
   }
 
+  // Ad tags never ship in server HTML. The client injects them only for
+  // proven-anon sessions (no token, no premium cookie), so premium/admin
+  // sessions stay ad-free even when cookies are blocked or unreadable.
   let html = await res.text();
-  if (premium) {
-    for (const src of TAG_SRCS) {
-      html = html.replace(new RegExp(`<script[^>]*src="${esc(src)}"[^>]*>\\s*</script>`, 'gi'), '');
-    }
+  for (const src of TAG_SRCS) {
+    html = html.replace(new RegExp(`<script[^>]*src="${esc(src)}"[^>]*>\\s*</script>`, 'gi'), '');
   }
   const out = new Headers(res.headers);
   out.delete('content-encoding');
   out.delete('content-length');
   out.delete('transfer-encoding');
   out.delete('etag');
-  out.set('x-mv-mw-mode', premium ? 'stripped' : 'full');
+  out.set('x-mv-mw-mode', 'stripped');
   return new Response(html, { status: 200, statusText: res.statusText, headers: out });
 }

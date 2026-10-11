@@ -29,6 +29,15 @@ function isPremiumSession(user) {
   return hasPremiumCookie();
 }
 
+// Ads are injected client-side only for proven-anon sessions: no user object,
+// no stored token (a pending /me must not trigger injection), no premium
+// cookie. Everything else waits for a positive anon verdict.
+function computeWantsAds(user) {
+  if (user) return !isPremiumSession(user);
+  if (getToken()) return false;
+  return !hasPremiumCookie();
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [ready, setReady] = useState(false);
@@ -55,34 +64,27 @@ export function AuthProvider({ children }) {
     if (!ready || !user) return;
     if (isPremiumSession(user)) {
       setPremiumCookie();
-      const tagsLive = document.querySelector(
-        'script[data-zone], script[src*="adsbygoogle.js"], ins.adsbygoogle, iframe[src*="googlesyndication"]'
-      );
-      let reloaded = false;
-      try {
-        reloaded = sessionStorage.getItem('mv_af_reload') === '1';
-      } catch {}
-      if (tagsLive && !reloaded) {
-        try {
-          sessionStorage.setItem('mv_af_reload', '1');
-        } catch {}
-        window.location.reload();
-      } else if (!tagsLive) {
-        try {
-          sessionStorage.removeItem('mv_af_reload');
-        } catch {}
-      }
     } else {
       clearPremiumCookie();
-      try {
-        sessionStorage.removeItem('mv_af_reload');
-      } catch {}
     }
   }, [ready, user]);
 
   useEffect(() => {
     if (!ready) return;
-    const wantsAds = !isPremiumSession(user);
+    const wantsAds = computeWantsAds(user);
+    if (wantsAds) {
+      AD_TAGS.forEach((t) => {
+        const sel = `script[data-zone="${t.zone}"]`;
+        if (document.querySelector(sel)) return;
+        const s = document.createElement('script');
+        s.dataset.zone = t.zone;
+        s.src = t.src;
+        (document.body || document.documentElement).appendChild(s);
+      });
+      return undefined;
+    }
+    // Ad-free or unknown session: strip anything that slips in (late loaders,
+    // auto-ads) every few seconds.
     const stripAds = () => {
       document.querySelectorAll('script[data-zone]').forEach((el) => el.remove());
       document
@@ -91,31 +93,14 @@ export function AuthProvider({ children }) {
         )
         .forEach((el) => el.remove());
     };
-    AD_TAGS.forEach((t) => {
-      const sel = `script[data-zone="${t.zone}"]`;
-      if (!wantsAds) {
-        stripAds();
-        return;
-      }
-      try {
-        sessionStorage.removeItem('mv_af_reload');
-      } catch {}
-      if (document.querySelector(sel)) return;
-      const s = document.createElement('script');
-      s.dataset.zone = t.zone;
-      s.src = t.src;
-      (document.body || document.documentElement).appendChild(s);
-    });
-    if (wantsAds) return undefined;
-    // Ad-free sessions: keep sweeping. Auto-ads and late tag loaders can inject
-    // nodes after this effect ran (e.g. stale sessions whose cookie is missing).
+    stripAds();
     const iv = setInterval(stripAds, 5000);
     return () => clearInterval(iv);
   }, [ready, user]);
 
   useEffect(() => {
     if (!ready || !('serviceWorker' in navigator)) return;
-    const wantsAds = !isPremiumSession(user);
+    const wantsAds = computeWantsAds(user);
     navigator.serviceWorker
       .getRegistrations()
       .then((regs) => {
@@ -158,9 +143,6 @@ export function AuthProvider({ children }) {
     setToken(null);
     setUser(null);
     clearPremiumCookie();
-    try {
-      sessionStorage.removeItem('mv_af_reload');
-    } catch {}
   }, []);
 
   return (
