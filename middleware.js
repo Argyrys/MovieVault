@@ -15,7 +15,7 @@ export default async function middleware(req) {
   if (/\.[a-z0-9]{2,6}$/.test(path)) return;
 
   const cookies = req.headers.get('cookie') || '';
-  const premium = /(?:^|;\s*)mv_role=premium(?:;|$)/.test(cookies);
+  const premium = /(?:^|;\s*)mv_role=(?:premium|admin)(?:;|$)/.test(cookies);
 
   const headers = new Headers(req.headers);
   headers.set('x-mv-mw', '1');

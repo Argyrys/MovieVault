@@ -10,7 +10,7 @@ const AD_TAGS = [
 
 function hasPremiumCookie() {
   try {
-    return /(?:^|;\s*)mv_role=premium(?:;|$)/.test(document.cookie);
+    return /(?:^|;\s*)mv_role=(?:premium|admin)(?:;|$)/.test(document.cookie);
   } catch {
     return false;
   }
@@ -83,15 +83,18 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!ready) return;
     const wantsAds = !isPremiumSession(user);
+    const stripAds = () => {
+      document.querySelectorAll('script[data-zone]').forEach((el) => el.remove());
+      document
+        .querySelectorAll(
+          'script[src*="adsbygoogle.js"], ins.adsbygoogle, iframe[src*="googlesyndication"], iframe[src*="googleads.g.doubleclick.net"]'
+        )
+        .forEach((el) => el.remove());
+    };
     AD_TAGS.forEach((t) => {
       const sel = `script[data-zone="${t.zone}"]`;
       if (!wantsAds) {
-        document.querySelectorAll(sel).forEach((el) => el.remove());
-        document
-          .querySelectorAll(
-            'script[src*="adsbygoogle.js"], ins.adsbygoogle, iframe[src*="googlesyndication"], iframe[src*="googleads.g.doubleclick.net"]'
-          )
-          .forEach((el) => el.remove());
+        stripAds();
         return;
       }
       try {
@@ -103,6 +106,11 @@ export function AuthProvider({ children }) {
       s.src = t.src;
       (document.body || document.documentElement).appendChild(s);
     });
+    if (wantsAds) return undefined;
+    // Ad-free sessions: keep sweeping. Auto-ads and late tag loaders can inject
+    // nodes after this effect ran (e.g. stale sessions whose cookie is missing).
+    const iv = setInterval(stripAds, 5000);
+    return () => clearInterval(iv);
   }, [ready, user]);
 
   useEffect(() => {
