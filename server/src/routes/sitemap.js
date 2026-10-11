@@ -1,9 +1,10 @@
+import { createHash } from 'node:crypto';
 import { Router } from 'express';
 import NodeCache from 'node-cache';
 import { tmdb } from '../services/metadata.js';
 
 const router = Router();
-const cache = new NodeCache({ stdTTL: 6 * 60 * 60, useClones: false });
+const cache = new NodeCache({ stdTTL: 60 * 60, useClones: false });
 
 const SITE = 'https://movievault.sbs';
 
@@ -51,13 +52,27 @@ async function buildXml() {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${rows}\n</urlset>`;
 }
 
+async function getDoc() {
+  const hit = cache.get('doc');
+  if (hit) return hit;
+  const xml = await buildXml();
+  const etag = `W/"${createHash('sha1').update(xml).digest('base64url').slice(0, 27)}"`;
+  const doc = { xml, etag };
+  cache.set('doc', doc);
+  return doc;
+}
+
 async function handler(req, res) {
-  let xml = cache.get('xml');
-  if (!xml) {
-    xml = await buildXml();
-    cache.set('xml', xml);
+  const doc = await getDoc();
+  res.set({
+    'Cache-Control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400',
+    ETag: doc.etag,
+  });
+  if (req.headers['if-none-match'] === doc.etag) {
+    res.status(304).end();
+    return;
   }
-  res.type('application/xml').send(xml);
+  res.type('application/xml').send(doc.xml);
 }
 
 router.get('/sitemap', handler);

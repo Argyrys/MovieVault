@@ -741,7 +741,7 @@ export const metadata = {
       }
     }
     const res = out.slice(0, 3000);
-    cache.set(key, res, LIST_TTL);
+    cache.set(key, res, 60 * 60);
     return res;
   },
 };

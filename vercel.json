@@ -7,6 +7,9 @@
       "maxDuration": 60
     }
   },
+  "crons": [
+    { "path": "/api/sitemap", "schedule": "0 4 * * *" }
+  ],
   "redirects": [
     {
       "source": "/",
