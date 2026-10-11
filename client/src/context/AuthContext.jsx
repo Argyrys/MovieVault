@@ -7,6 +7,8 @@ const AD_TAGS = [
   { zone: '11960356', src: 'https://al5sm.com/tag.min.js' },
   { zone: '11960359', src: 'https://n6wxm.com/vignette.min.js' },
 ];
+const ADSENSE_SRC =
+  'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2053351556528753';
 
 function hasPremiumCookie() {
   try {
@@ -81,6 +83,13 @@ export function AuthProvider({ children }) {
         s.src = t.src;
         (document.body || document.documentElement).appendChild(s);
       });
+      if (!document.querySelector('script[src*="adsbygoogle.js"]')) {
+        const s = document.createElement('script');
+        s.async = true;
+        s.crossOrigin = 'anonymous';
+        s.src = ADSENSE_SRC;
+        document.head.appendChild(s);
+      }
       return undefined;
     }
     // Ad-free or unknown session: strip anything that slips in (late loaders,
