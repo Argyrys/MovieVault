@@ -109,7 +109,9 @@ router.get('/api/ping-search', async (req, res) => {
   };
   let out = { ok: false, urls: urls.length, status: 0 };
   try {
-    const r = await fetch('https://api.indexnow.org/IndexNow', {
+    // Bing's alternate IndexNow host; api.indexnow.org rejects some
+    // datacenter egress IPs with 403 during key validation.
+    const r = await fetch('https://www.bing.com/indexnow', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json; charset=utf-8' },
       body: JSON.stringify(body),
@@ -119,7 +121,8 @@ router.get('/api/ping-search', async (req, res) => {
   } catch (err) {
     out.error = err.message;
   }
-  if (out.ok || out.status) pingThrottle.set('sent', out);
+  // Only remember successful submissions; never throttle on failures.
+  if (out.ok || out.status === 200 || out.status === 202) pingThrottle.set('sent', out);
   res.json(out);
 });
 
