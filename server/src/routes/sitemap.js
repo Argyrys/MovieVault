@@ -80,4 +80,47 @@ router.get('/sitemap.xml', handler);
 router.get('/api/sitemap', handler);
 router.get('/api/sitemap.xml', handler);
 
+// IndexNow: submit every sitemap URL to Bing/Yandex/Yep (and Google-adjacent
+// crawlers). Hit daily by the Vercel cron; throttled against abuse.
+const INDEXNOW_KEY = 'c47ebd3b91ef135fcdbc8f064561f1ad';
+const pingThrottle = new NodeCache({ stdTTL: 12 * 60 * 60, useClones: false });
+
+router.get('/api/ping-search', async (req, res) => {
+  const sent = pingThrottle.get('sent');
+  if (sent) {
+    res.json({ ok: true, throttled: true, ...sent });
+    return;
+  }
+  let titles = [];
+  try {
+    if (typeof tmdb.sitemapEntries === 'function') titles = await tmdb.sitemapEntries();
+  } catch (err) {
+    console.warn('[ping] entries unavailable:', err.message);
+  }
+  const urls = [
+    ...STATIC_URLS.map((s) => SITE + s.loc),
+    ...titles.map((t) => `${SITE}/title/${t.type}/${t.tmdb_id}`),
+  ];
+  const body = {
+    host: 'movievault.sbs',
+    key: INDEXNOW_KEY,
+    keyLocation: `${SITE}/${INDEXNOW_KEY}.txt`,
+    urlList: urls.slice(0, 10000),
+  };
+  let out = { ok: false, urls: urls.length, status: 0 };
+  try {
+    const r = await fetch('https://api.indexnow.org/IndexNow', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(10000),
+    });
+    out = { ok: r.ok, urls: urls.length, status: r.status };
+  } catch (err) {
+    out.error = err.message;
+  }
+  if (out.ok || out.status) pingThrottle.set('sent', out);
+  res.json(out);
+});
+
 export default router;

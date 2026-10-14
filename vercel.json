@@ -8,7 +8,7 @@
     }
   },
   "crons": [
-    { "path": "/api/sitemap", "schedule": "0 4 * * *" }
+    { "path": "/api/ping-search", "schedule": "0 4 * * *" }
   ],
   "redirects": [
     {
