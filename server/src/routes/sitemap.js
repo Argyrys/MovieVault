@@ -123,6 +123,11 @@ router.get('/api/ping-search', async (req, res) => {
   }
   // Only remember successful submissions; never throttle on failures.
   if (out.ok || out.status === 200 || out.status === 202) pingThrottle.set('sent', out);
+  // Keep the sitemap doc cache warm so Google's sitemap fetcher (and any
+  // crawler) always gets an instant 200, never a cold rebuild.
+  try {
+    await getDoc();
+  } catch { /* warmup only */ }
   res.json(out);
 });
 
