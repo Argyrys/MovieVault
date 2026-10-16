@@ -136,6 +136,7 @@ export default async function middleware(req) {
   const url = new URL(req.url);
   const path = url.pathname;
   if (path.startsWith('/api/')) return;
+  if (path === '/index.html') return Response.redirect(SITE + '/' + url.search, 308);
   if (/\.[a-z0-9]{2,6}$/.test(path)) return;
 
   // Collapse duplicate URL shapes into one canonical form so crawlers don't
