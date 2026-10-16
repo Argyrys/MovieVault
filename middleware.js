@@ -138,6 +138,18 @@ export default async function middleware(req) {
   if (path.startsWith('/api/')) return;
   if (/\.[a-z0-9]{2,6}$/.test(path)) return;
 
+  // Collapse duplicate URL shapes into one canonical form so crawlers don't
+  // index variants: trailing slashes, mixed-case route prefixes, /index.html.
+  if (path !== '/') {
+    let norm = path.replace(/\/+$/, '');
+    if (!norm) norm = '/';
+    const KNOWN = ['/title', '/watch', '/browse', '/search', '/login', '/register', '/premium', '/privacy', '/admin'];
+    const lowerFirst = norm.replace(/^(\/[A-Za-z0-9_-]+)/, (s) => s.toLowerCase());
+    if (KNOWN.some((k) => lowerFirst.startsWith(k))) norm = lowerFirst;
+    if (norm === '/index.html') norm = '/';
+    if (norm !== path) return Response.redirect(new URL(norm + url.search, SITE), 308);
+  }
+
   const headers = new Headers(req.headers);
   headers.set('x-mv-mw', '1');
   headers.delete('if-none-match');
