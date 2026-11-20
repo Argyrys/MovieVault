@@ -740,7 +740,7 @@ export const metadata = {
         out.push({ type: 'movie', tmdb_id: i.tmdb_id, release_date: i.release_date });
       }
     }
-    const res = out.slice(0, 3000);
+    const res = out.slice(0, 5000);
     cache.set(key, res, 60 * 60);
     return res;
   },

@@ -1,4 +1,18 @@
-User-agent: *
+﻿User-agent: *
 Allow: /
 
+# Block admin and auth pages
+Disallow: /admin
+Disallow: /login
+Disallow: /register
+Disallow: /watch/
+
+# Sitemap
 Sitemap: https://movievault.sbs/sitemap.xml
+
+# Crawl-delay for aggressive bots
+User-agent: AhrefsBot
+Crawl-delay: 10
+
+User-agent: SemrushBot
+Crawl-delay: 10

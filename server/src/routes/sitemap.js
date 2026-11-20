@@ -10,9 +10,11 @@ const SITE = 'https://movievault.sbs';
 
 const STATIC_URLS = [
   { loc: '/', priority: '1.0', freq: 'daily' },
-  { loc: '/browse', priority: '0.8', freq: 'daily' },
-  { loc: '/browse?type=movie', priority: '0.8', freq: 'daily' },
-  { loc: '/browse?type=tv', priority: '0.8', freq: 'daily' },
+  { loc: '/browse', priority: '0.95', freq: 'daily' },
+  { loc: '/browse?type=movie', priority: '0.95', freq: 'daily' },
+  { loc: '/browse?type=tv', priority: '0.95', freq: 'daily' },
+  { loc: '/browse?type=tv&lang=ko&genre=18', priority: '0.9', freq: 'daily' },
+  { loc: '/premium', priority: '0.7', freq: 'weekly' },
   { loc: '/privacy', priority: '0.3', freq: 'yearly' },
 ];
 
