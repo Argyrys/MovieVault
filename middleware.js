@@ -1,14 +1,4 @@
-const TAG_SRCS = [
-  'https://al5sm.com/tag.min.js',
-  'https://n6wxm.com/vignette.min.js',
-  'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2053351556528753',
-];
-
 const SITE = 'https://movievault.sbs';
-
-function esc(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
 
 function attr(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -34,6 +24,21 @@ async function fetchTitleMeta(type, id) {
   }
 }
 
+function injectCrawlableContent(html, meta, type, id) {
+  if (!meta || !meta.title || !type || !id) return html;
+  const desc = meta.description || '';
+  const cleanTitle = attr((meta.title || '').replace(/ - Watch .*$/, '').replace(/ — Watch .*$/, ''));
+  const year = meta.year ? ' (' + meta.year + ')' : '';
+  const kind = type === 'tv' ? 'TV Series' : 'Movie';
+  const content = '\n    <noscript><main style="max-width:800px;margin:40px auto;padding:20px;font-family:Arial,sans-serif;color:#fff;background:#0a0a0b"><h1>' + cleanTitle + year + '</h1><p><strong>Type:</strong> ' + kind + '</p>' + (desc ? '<p>' + attr(desc) + '</p>' : '') + (meta.poster ? '<img src="' + attr(meta.poster) + '" alt="' + cleanTitle + '" style="max-width:200px">' : '') + '<p><a href="https://movievault.sbs/watch/' + type + '/' + id + '">Watch ' + kind.toLowerCase() + ' online</a></p><p><a href="https://movievault.sbs/browse">Browse Movies and TV Shows</a></p></main></noscript>\n    <div id="mv-seo-content" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0" aria-hidden="true"><article><h1>' + cleanTitle + year + '</h1><p>' + attr(desc) + '</p></article></div>';
+  if (html.includes('<div id="root"></div>')) {
+    html = html.replace('<div id="root"></div>', '<div id="root"></div>' + content);
+  } else if (html.includes('</body>')) {
+    html = html.replace('</body>', content + '</body>');
+  }
+  return html;
+}
+
 function applyMeta(html, meta) {
   if (meta.title) html = html.replace(/<title>[^<]*<\/title>/, `<title>${attr(meta.title)}</title>`);
   if (meta.description) html = html.replace(/<meta name="description" content="[^"]*"\s*\/>/, `<meta name="description" content="${attr(meta.description)}" />`);
@@ -54,12 +59,35 @@ function applyMeta(html, meta) {
 async function metaFor(path, search) {
   if (path === '/') {
     return {
-      title: 'MovieVault — Stream Movies, TV Series & K-Dramas Online',
-      description: 'Watch and stream movies and TV series online — Bollywood, Hollywood, K-Dramas and more. Free streaming and downloads on MovieVault.',
+      title: 'MovieVault - Watch Free Movies, TV Shows & K-Dramas Online',
+      description: 'Watch free movies, TV shows and K-Dramas online. Stream Bollywood, Hollywood, Korean dramas, anime and more in HD quality on MovieVault. No sign up required.',
       canonical: SITE + '/',
-      ogTitle: 'MovieVault — Stream Movies & TV Series',
-      ogDescription: 'Watch movies and TV series online — Bollywood, K-Dramas, Hollywood and more.',
+      ogTitle: 'MovieVault - Watch Free Movies, TV Shows & K-Dramas Online',
+      ogDescription: 'Watch free movies, TV series and K-Dramas online. Stream Bollywood, Hollywood, Korean dramas and more in HD. No sign up required.',
       ogUrl: SITE + '/',
+      ogImage: SITE + '/og.png',
+      ogType: 'website',
+      jsonLd: JSON.stringify([
+        {
+          '@context': 'https://schema.org',
+          '@type': 'WebSite',
+          name: 'MovieVault',
+          url: SITE,
+          description: 'Watch free movies, TV shows and K-Dramas online in HD',
+          potentialAction: {
+            '@type': 'SearchAction',
+            target: { '@type': 'EntryPoint', urlTemplate: SITE + '/search?q={search_term_string}' },
+            'query-input': 'required name=search_term_string',
+          },
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'Organization',
+          name: 'MovieVault',
+          url: SITE,
+          logo: SITE + '/favicon.svg',
+        },
+      ]).replace(/</g, '\\u003c'),
     };
   }
   if (path === '/browse') {
@@ -122,9 +150,13 @@ async function metaFor(path, search) {
   if (path.startsWith('/admin')) return { title: 'Admin — MovieVault', noindex: true };
   if (path === '/premium') {
     return {
-      title: 'Go Premium — Ad-Free Streaming | MovieVault',
-      description: 'Go premium on MovieVault: ad-free streaming, downloads and more. Monthly plan at ₹99.',
+      title: 'Go Premium - Ad-Free Streaming & Downloads | MovieVault',
+      description: 'Go premium on MovieVault: ad-free streaming, unlimited downloads and more. Monthly plan at ₹99.',
       canonical: SITE + '/premium',
+      ogTitle: 'Go Premium | MovieVault',
+      ogDescription: 'Ad-free streaming, downloads and premium features for just ₹99/month.',
+      ogUrl: SITE + '/premium',
+      ogImage: SITE + '/og.png',
     };
   }
   if (path === '/privacy') return { title: 'Privacy Policy — MovieVault', canonical: SITE + '/privacy' };
@@ -166,16 +198,16 @@ export default async function middleware(req) {
     return new Response(res.body, { status: res.status, statusText: res.statusText, headers: passthru });
   }
 
-  // Ad tags never ship in server HTML. The client injects them only for
-  // proven-anon sessions (no token, no premium cookie), so premium/admin
-  // sessions stay ad-free even when cookies are blocked or unreadable.
+  // Per-route SEO meta injection (titles, canonicals, OG, JSON-LD).
   let html = await res.text();
-  for (const src of TAG_SRCS) {
-    html = html.replace(new RegExp(`<script[^>]*src="${esc(src)}"[^>]*>\\s*</script>`, 'gi'), '');
-  }
   try {
     const meta = await metaFor(path, url.search);
-    if (meta) html = applyMeta(html, meta);
+    if (meta) {
+      html = applyMeta(html, meta);
+      if (meta.type && meta.id && path.match(/^\/title\/(movie|tv)\/\d+$/)) {
+        html = injectCrawlableContent(html, meta, meta.type, meta.id);
+      }
+    }
   } catch (err) {
     console.warn('[mw] meta injection failed:', err.message);
   }
@@ -185,6 +217,6 @@ export default async function middleware(req) {
   out.delete('content-length');
   out.delete('transfer-encoding');
   out.delete('etag');
-  out.set('x-mv-mw-mode', 'stripped');
+  out.set('x-mv-mw-mode', 'meta');
   return new Response(html, { status: 200, statusText: res.statusText, headers: out });
 }

@@ -3,13 +3,6 @@ import { authApi, getToken, setToken } from '../lib/api.js';
 
 const AuthContext = createContext(null);
 
-const AD_TAGS = [
-  { zone: '11960356', src: 'https://al5sm.com/tag.min.js' },
-  { zone: '11960359', src: 'https://n6wxm.com/vignette.min.js' },
-];
-const ADSENSE_SRC =
-  'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2053351556528753';
-
 function hasPremiumCookie() {
   try {
     return /(?:^|;\s*)mv_role=(?:premium|admin)(?:;|$)/.test(document.cookie);
@@ -29,15 +22,6 @@ function clearPremiumCookie() {
 function isPremiumSession(user) {
   if (user) return user.role === 'premium' || user.role === 'admin';
   return hasPremiumCookie();
-}
-
-// Ads are injected client-side only for proven-anon sessions: no user object,
-// no stored token (a pending /me must not trigger injection), no premium
-// cookie. Everything else waits for a positive anon verdict.
-function computeWantsAds(user) {
-  if (user) return !isPremiumSession(user);
-  if (getToken()) return false;
-  return !hasPremiumCookie();
 }
 
 export function AuthProvider({ children }) {
@@ -71,63 +55,25 @@ export function AuthProvider({ children }) {
     }
   }, [ready, user]);
 
-  useEffect(() => {
-    if (!ready) return;
-    const wantsAds = computeWantsAds(user);
-    if (wantsAds) {
-      AD_TAGS.forEach((t) => {
-        const sel = `script[data-zone="${t.zone}"]`;
-        if (document.querySelector(sel)) return;
-        const s = document.createElement('script');
-        s.dataset.zone = t.zone;
-        s.src = t.src;
-        (document.body || document.documentElement).appendChild(s);
-      });
-      if (!document.querySelector('script[src*="adsbygoogle.js"]')) {
-        const s = document.createElement('script');
-        s.async = true;
-        s.crossOrigin = 'anonymous';
-        s.src = ADSENSE_SRC;
-        document.head.appendChild(s);
-      }
-      return undefined;
-    }
-    // Ad-free or unknown session: strip anything that slips in (late loaders,
-    // auto-ads) every few seconds.
-    const stripAds = () => {
-      document.querySelectorAll('script[data-zone]').forEach((el) => el.remove());
-      document
-        .querySelectorAll(
-          'script[src*="adsbygoogle.js"], ins.adsbygoogle, iframe[src*="googlesyndication"], iframe[src*="googleads.g.doubleclick.net"]'
-        )
-        .forEach((el) => el.remove());
-    };
-    stripAds();
-    const iv = setInterval(stripAds, 5000);
-    return () => clearInterval(iv);
-  }, [ready, user]);
-
+  // Ads are gone entirely. Unregister the old ad-network service worker for
+  // every visitor so it can't keep injecting anything from a stale scope.
   useEffect(() => {
     if (!ready || !('serviceWorker' in navigator)) return;
-    const wantsAds = computeWantsAds(user);
     navigator.serviceWorker
       .getRegistrations()
       .then((regs) => {
-        const ours = regs.filter((r) => {
-          try {
-            return new URL(r.scope).origin === location.origin;
-          } catch {
-            return false;
-          }
-        });
-        if (wantsAds) {
-          if (!ours.length) navigator.serviceWorker.register('/sw.js').catch(() => {});
-        } else {
-          ours.forEach((r) => r.unregister().catch(() => {}));
-        }
+        regs
+          .filter((r) => {
+            try {
+              return new URL(r.scope).origin === location.origin;
+            } catch {
+              return false;
+            }
+          })
+          .forEach((r) => r.unregister().catch(() => {}));
       })
       .catch(() => {});
-  }, [ready, user]);
+  }, [ready]);
 
   const login = useCallback(async (email, password) => {
     const res = await authApi.login(email, password);
