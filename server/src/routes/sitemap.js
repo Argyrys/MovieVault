@@ -14,6 +14,7 @@ const STATIC_URLS = [
   { loc: '/browse?type=movie', priority: '0.95', freq: 'daily' },
   { loc: '/browse?type=tv', priority: '0.95', freq: 'daily' },
   { loc: '/browse?type=tv&lang=ko&genre=18', priority: '0.9', freq: 'daily' },
+  { loc: '/browse?type=tv&genre=10749', priority: '0.85', freq: 'daily' },
   { loc: '/premium', priority: '0.7', freq: 'weekly' },
   { loc: '/privacy', priority: '0.3', freq: 'yearly' },
 ];

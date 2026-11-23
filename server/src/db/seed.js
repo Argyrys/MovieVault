@@ -13,7 +13,7 @@ const MOVIE_GENRES = [
 const TV_GENRES = [
   [10759, 'Action & Adventure'], [16, 'Animation'], [35, 'Comedy'], [80, 'Crime'],
   [99, 'Documentary'], [18, 'Drama'], [10751, 'Family'], [10762, 'Kids'],
-  [9648, 'Mystery'], [10763, 'News'], [10764, 'Reality'], [878, 'Science Fiction'],
+  [9648, 'Mystery'], [10749, 'Romance'], [10763, 'News'], [10764, 'Reality'], [878, 'Science Fiction'],
   [10765, 'Soap'], [10766, 'Talk'], [10767, 'TV Movie'], [10752, 'War & Politics'],
   [37, 'Western'],
 ];
@@ -25,11 +25,14 @@ const HOME_ROWS = [
   { key: 'top_rated', label: 'Top Rated', source: 'tmdb:top_rated', media_type: null, sort_order: 30 },
   { key: 'popular_movies', label: 'Popular Movies', source: 'tmdb:popular', media_type: 'movie', sort_order: 40 },
   { key: 'popular_tv', label: 'Popular TV Series', source: 'tmdb:popular', media_type: 'tv', sort_order: 50 },
+  { key: 'airing', label: 'Airing Now', source: 'tmdb:on_the_air', media_type: 'tv', sort_order: 55 },
+  { key: 'series_new', label: 'New Series', source: 'tmdb:series_new', media_type: 'tv', sort_order: 56 },
   { key: 'upcoming', label: 'Coming Soon', source: 'tmdb:upcoming', media_type: 'movie', sort_order: 60 },
   { key: 'hindi', label: 'Hindi Movies', source: 'tmdb:hindi', media_type: 'movie', sort_order: 65 },
   { key: 'kdrama', label: 'K-Dramas', source: 'tmdb:kdrama', media_type: 'tv', sort_order: 70 },
   { key: 'kdrama_new', label: 'New K-Dramas', source: 'tmdb:kdrama_new', media_type: 'tv', sort_order: 71 },
   { key: 'kdrama_top', label: 'Top-Rated K-Dramas', source: 'tmdb:kdrama_top', media_type: 'tv', sort_order: 72 },
+  { key: 'kdrama_romance', label: 'K-Drama Romance', source: 'tmdb:kdrama_romance', media_type: 'tv', sort_order: 73 },
   { key: 'featured', label: 'Featured in the Vault', source: 'curated', media_type: null, sort_order: 5 },
 ];
 

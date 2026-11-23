@@ -21,11 +21,14 @@ const DEFAULT_HOME_ROWS = [
   { key: 'top_rated', label: 'Top Rated', source: 'tmdb:top_rated', media_type: null },
   { key: 'popular_movies', label: 'Popular Movies', source: 'tmdb:popular', media_type: 'movie' },
   { key: 'popular_tv', label: 'Popular TV Series', source: 'tmdb:popular', media_type: 'tv' },
+  { key: 'airing', label: 'Airing Now', source: 'tmdb:on_the_air', media_type: 'tv' },
+  { key: 'series_new', label: 'New Series', source: 'tmdb:series_new', media_type: 'tv' },
   { key: 'upcoming', label: 'Coming Soon', source: 'tmdb:upcoming', media_type: 'movie' },
   { key: 'hindi', label: 'Hindi Movies', source: 'tmdb:hindi', media_type: 'movie' },
   { key: 'kdrama', label: 'K-Dramas', source: 'tmdb:kdrama', media_type: 'tv' },
   { key: 'kdrama_new', label: 'New K-Dramas', source: 'tmdb:kdrama_new', media_type: 'tv' },
   { key: 'kdrama_top', label: 'Top-Rated K-Dramas', source: 'tmdb:kdrama_top', media_type: 'tv' },
+  { key: 'kdrama_romance', label: 'K-Drama Romance', source: 'tmdb:kdrama_romance', media_type: 'tv' },
 ];
 
 const SORTS = {
@@ -121,6 +124,15 @@ async function fetchRowItems(row) {
       return (
         await tmdb.discover('tv', { lang: 'ko', genre: '18', sort: 'vote_average.desc', voteMin: 100 })
       ).results;
+    case 'tmdb:series_new':
+      return (await tmdb.discover('tv', { sort: 'first_air_date.desc' })).results;
+    case 'tmdb:kdrama_romance': {
+      const [a, b] = await Promise.all([
+        tmdb.discover('tv', { lang: 'ko', genre: 'romance', sort: 'popularity.desc', page: 1 }),
+        tmdb.discover('tv', { lang: 'ko', genre: 'romance', sort: 'popularity.desc', page: 2 }),
+      ]);
+      return [...a.results, ...b.results].slice(0, 40);
+    }
     case 'curated':
       return curatedRow(row);
     default:

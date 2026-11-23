@@ -54,6 +54,7 @@ const TV_GENRES = [
   { id: 10751, name: 'Family', slug: 'family' },
   { id: 10762, name: 'Kids', slug: 'children' },
   { id: 9648, name: 'Mystery', slug: 'mystery' },
+  { id: 10749, name: 'Romance', slug: 'romance' },
   { id: 10763, name: 'News', slug: 'news' },
   { id: 10764, name: 'Reality', slug: 'reality' },
   { id: 10765, name: 'Sci-Fi & Fantasy', slug: 'science-fiction' },
@@ -707,8 +708,9 @@ export const metadata = {
     const hit = cache.get(key);
     if (hit) return hit;
     // Cover every file-backed index the UI surfaces: week (popular),
-    // month (top-rated + browse default sort), today (trending), hindi row.
-    const [mvWeek, tvWeek, mvMonth, tvMonth, mvToday, tvToday, hindi] = await Promise.all([
+    // month (top-rated + browse default sort), today (trending), hindi row,
+    // plus the K-drama / new-series / airing lists backing home rows.
+    const [mvWeek, tvWeek, mvMonth, tvMonth, mvToday, tvToday, hindi, kdramaA, kdramaB, newSeries, airing] = await Promise.all([
       weekFile('movies'),
       weekFile('tv'),
       monthFile('movies'),
@@ -716,11 +718,23 @@ export const metadata = {
       trendingFile('movies'),
       trendingFile('tv'),
       hindiRow(),
+      metadata.discover('tv', { lang: 'ko', genre: '18', sort: 'popularity.desc', page: 1 }),
+      metadata.discover('tv', { lang: 'ko', genre: '18', sort: 'popularity.desc', page: 2 }),
+      metadata.discover('tv', { sort: 'first_air_date.desc', page: 1 }),
+      metadata.onTheAir(),
     ]);
     const seen = new Set();
     const out = [];
     const push = (item, type) => {
       const n = normalize(item, type);
+      if (!n || !n.tmdb_id) return;
+      const k = `${type}:${n.tmdb_id}`;
+      if (seen.has(k)) return;
+      seen.add(k);
+      out.push({ type, tmdb_id: n.tmdb_id, release_date: n.release_date });
+    };
+    // Already-normalized items (from discover/onTheAir) bypass normalize().
+    const pushNorm = (n, type) => {
       if (!n || !n.tmdb_id) return;
       const k = `${type}:${n.tmdb_id}`;
       if (seen.has(k)) return;
@@ -739,6 +753,9 @@ export const metadata = {
         seen.add(k);
         out.push({ type: 'movie', tmdb_id: i.tmdb_id, release_date: i.release_date });
       }
+    }
+    for (const list of [kdramaA, kdramaB, newSeries, airing]) {
+      for (const i of list.results || []) pushNorm(i, 'tv');
     }
     const res = out.slice(0, 5000);
     cache.set(key, res, 60 * 60);
