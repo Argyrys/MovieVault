@@ -148,19 +148,30 @@ export default function Watch() {
   }, [type, id, isTv, season, episode, retryTick]);
 
   const handleStreamError = useCallback(() => {
-    if (!servers?.length || !selected || selected.kind === 'embed') return;
-    const directs = servers.filter((s) => s.kind !== 'embed');
-    if (directs.length < 2) return;
+    if (!servers?.length || !selected) return;
     triedStreamsRef.current.add(selected.id);
-    const next = directs.find((s) => !triedStreamsRef.current.has(s.id));
+    // Try untried direct streams first, then embeds. Previously the client
+    // refused to fall back unless there were 2+ direct servers, so titles with
+    // a single dead direct stream (e.g. Annabelle) got stuck with no playback.
+    const candidates = [
+      ...servers.filter((s) => s.kind !== 'embed'),
+      ...servers.filter((s) => s.kind === 'embed'),
+    ];
+    const next = candidates.find((s) => !triedStreamsRef.current.has(s.id));
     if (next) setSelected(next);
   }, [servers, selected]);
 
   useEffect(() => {
     if (userPicked || !servers?.length || !detailReady) return;
     const preferHindi = detail?.original_language === 'en';
-    const preferred = preferHindi ? servers.find((s) => s.language === 'Hindi') : null;
-    setSelected(preferred || servers[0]);
+    // Prefer a Hindi dub for English titles, then a direct stream (native
+    // player exposes audio-track selection), then fall back to the first
+    // working server. Embeds are last because their audio controls live in
+    // the iframe and can't be managed here.
+    const hindi = preferHindi ? servers.find((s) => s.language === 'Hindi') : null;
+    const hindiDirect = hindi && hindi.kind !== 'embed' ? hindi : null;
+    const direct = servers.find((s) => s.kind !== 'embed');
+    setSelected(hindiDirect || direct || hindi || servers[0]);
   }, [servers, detail, detailReady, userPicked]);
 
   const setEp = (s, e) => {

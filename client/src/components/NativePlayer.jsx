@@ -88,7 +88,15 @@ const NativePlayer = forwardRef(function NativePlayer(
       }));
       tracksRef.current = list;
       setAudioTracks(list);
-      setAudioCurrent(list.find((t) => t.id === hls.audioTrack) || list[0] || null);
+      const current = list.find((t) => t.id === hls.audioTrack) || list[0] || null;
+      setAudioCurrent(current);
+      // If hls.js has not selected a track yet (-1) but tracks exist, pick the
+      // first one. A missing audio-track selection is a common "no sound"
+      // cause on multi-language HLS manifests.
+      if (list.length && (hls.audioTrack === -1 || hls.audioTrack == null)) {
+        hls.audioTrack = list[0].id;
+        setAudioCurrent(list[0]);
+      }
     };
 
     const syncNativeTracks = () => {
@@ -126,6 +134,10 @@ const NativePlayer = forwardRef(function NativePlayer(
             hls.loadSource(src);
             hls.attachMedia(video);
             hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, syncHlsTracks);
+            // AUDIO_TRACK_LOADED fires once the selected track's playlist is
+            // parsed (sometimes after AUDIO_TRACKS_UPDATED). Re-sync here so
+            // the audio menu and the active track stay accurate.
+            hls.on(Hls.Events.AUDIO_TRACK_LOADED, syncHlsTracks);
             hls.on(Hls.Events.AUDIO_TRACK_SWITCHED, (_e, data) => {
               const list = tracksRef.current;
               setAudioCurrent(list.find((t) => t.id === data.id) || list[0] || null);
@@ -205,9 +217,17 @@ const NativePlayer = forwardRef(function NativePlayer(
   const unmute = () => {
     const video = videoRef.current;
     if (!video) return;
+    // Ensure a valid audio track is selected before unmuting. On some HLS
+    // manifests audioTrack can be -1 (none), which yields silence even after
+    // the element is unmuted.
+    const hls = hlsRef.current;
+    if (hls && hls.audioTracks?.length && (hls.audioTrack === -1 || hls.audioTrack == null)) {
+      hls.audioTrack = hls.audioTracks[0].id;
+    }
     video.muted = false;
     video.volume = 1;
-    video.play().catch(() => {});
+    const p = video.play();
+    if (p?.catch) p.catch(() => {});
     setMuted(false);
   };
 

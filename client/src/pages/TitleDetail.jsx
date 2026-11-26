@@ -16,7 +16,15 @@ export default function TitleDetail() {
   const [error, setError] = useState(null);
   const [reload, setReload] = useState(0);
   const [trailer, setTrailer] = useState(null);
-  useDocTitle(data?.title ? `${data.title}${data.year ? ` (${data.year})` : ''}` : null);
+  
+  // Generate SEO-friendly title
+  const seoTitle = data?.title ? `${data.title} ${data.year ? `(${data.year})` : ''} — MovieVault` : 'MovieVault';
+  // Generate unique description from overview + genre + unique value
+  const uniqueDescription = data?.overview 
+    ? `${data.title} (${data.year}): ${data.overview.substring(0, 200)}${data.overview.length > 200 ? '...' : ''}. ${data.genres?.slice(0, 3).map(g => g.name).join(', ')}. Watch ${data.title.toLowerCase()} online for free.`
+    : `${data?.title || ''} ${data?.year || ''} — Watch free movies and TV shows at MovieVault`;
+  
+  useDocTitle(data?.title ? `${data.title}${data.year ? ` (${data.year})` : ''}` : null, type, 'movie');
 
   useEffect(() => {
     let alive = true;
@@ -51,8 +59,37 @@ export default function TitleDetail() {
     data.status ? `Status: ${data.status}` : null,
   ].filter(Boolean);
 
+  // Generate JSON-LD Schema Markup
+  const schemaMarkup = data && {
+    "@context": "https://schema.org",
+    "@type": type === 'tv' ? "TVSeries" : "Movie",
+    "name": data.title,
+    "description": data.overview || `Watch ${data.title} online free at MovieVault`,
+    "url": `https://movievault.sbs/title/${type}/${id}`,
+    "image": data.poster_url || data.backdrop_url,
+    "duration": data.runtime ? `${formatRuntime(data.runtime)}` : null,
+    "datePublished": data.release_date || data.first_air_date,
+    "genre": data.genres?.map(g => g.name) || [],
+    "actor": data.cast?.slice(0, 8).map(c => ({
+      "@type": "Person",
+      "name": c.name,
+      "character": c.character
+    })) || [],
+    "director": director ? [{ "@type": "Person", "name": director.name }] : [],
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": data.vote_average || 0,
+      "ratingCount": data.vote_count || 0
+    }
+  };
+
   return (
     <div className="detail">
+      {/* JSON-LD Schema Markup */}
+      <script type="application/ld+json">
+        {JSON.stringify(schemaMarkup, null, 2)}
+      </script>
+
       <div
         className="detail-bg"
         style={{ backgroundImage: `url(${data.backdrop_url || data.poster_url})` }}
@@ -117,6 +154,25 @@ export default function TitleDetail() {
             </p>
           )}
         </div>
+      </div>
+
+      {/* Unique Value Section - Why Watch This Movie? */}
+      <div className="movie-unique-value">
+        <h2>🎬 Why Watch This Movie?</h2>
+        <p><strong>Plot:</strong> {data.overview || 'Plot summary available on MovieVault'}</p>
+        <p><strong>Highlights:</strong> {data.genres?.slice(0, 3).map(g => `${g.name} elements`).join(', ') || 'Quality entertainment'}.</p>
+        <p><strong>Best for:</strong> {data.type === 'movie' ? 'Movie night with friends, solo viewing' : 'Current season, binge-watching fans'}</p>
+        <p><strong>Similar movies:</strong> {data.similar?.slice(0, 3).map(s => s.title).join(', ') || 'Check these out'}.</p>
+      </div>
+
+      {/* Trivia Section */}
+      <div className="movie-trivia">
+        <h3>🎥 Trivia</h3>
+        <ul>
+          {data.genres?.length && <li><strong>Genre:</strong> {data.genres.map(g => g.name).join(', ')}</li>}
+          {data.release_date && <li><strong>Released:</strong> {new Date(data.release_date).getFullYear()}</li>}
+          {data.runtime && <li><strong>Runtime:</strong> {formatRuntime(data.runtime)}</li>}
+        </ul>
       </div>
 
       {data.cast?.length > 0 && (

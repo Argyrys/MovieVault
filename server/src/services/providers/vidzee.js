@@ -16,6 +16,25 @@ const SERVERS = [
   { id: 'dcloud', key: 'dcloud', name: 'English', timeout: 1600 },
 ];
 
+// Fast liveness check: upstreams (ngcloud, hakunaymatata) frequently return
+// a URL that then 502s on the actual manifest. Probe the manifest with a
+// Range request before exposing it to the client, otherwise users land on a
+// "direct" server that is dead and appears to have no sound/video.
+async function isStreamAlive(url, headers, timeoutMs) {
+  try {
+    const probeHeaders = { ...headers, range: 'bytes=0-0' };
+    const res = await fetch(url, {
+      headers: probeHeaders,
+      signal: AbortSignal.timeout(timeoutMs),
+      redirect: 'follow',
+    });
+    // 200 / 206 = playable, 416 = already at EOF but still a live file
+    return res.ok || res.status === 206 || res.status === 416;
+  } catch {
+    return false;
+  }
+}
+
 async function fetchStream(server, { type, tmdbId, season, episode }, deadline) {
   const path =
     type === 'movie'
@@ -51,6 +70,14 @@ async function fetchStream(server, { type, tmdbId, season, episode }, deadline) 
       } catch {
         headers = { referer: REFERER };
       }
+
+      // Probe the manifest before returning it. Dead URLs are the #1 cause of
+      // "no sound" / black-screen reports on the native player.
+      const budgetLeft = deadline - Date.now();
+      if (budgetLeft > 0 && !(await isStreamAlive(data.url, headers, Math.min(1800, budgetLeft)))) {
+        continue;
+      }
+
       return {
         id: `vidzee-${server.key}`,
         name: server.name,

@@ -158,6 +158,104 @@ textarea {
   border: 0;
 }
 
+/* Unique value sections for SEO enhancement */
+.home-unique-value {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  margin: 24px 0;
+}
+
+.home-unique-value h2 {
+  color: var(--accent);
+  font-size: 18px;
+  margin-top: 0;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.home-unique-value p {
+  margin: 0;
+  font-size: 15px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.movie-unique-value {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  margin: 24px 0;
+}
+
+.movie-unique-value h2 {
+  color: var(--accent);
+  font-size: 18px;
+  margin-top: 0;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.movie-unique-value p {
+  margin: 8px 0;
+  font-size: 15px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.movie-unique-value strong {
+  color: var(--text);
+  display: block;
+  margin-top: 8px;
+}
+
+.movie-trivia {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.movie-trivia h3 {
+  color: var(--accent);
+  font-size: 16px;
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.movie-trivia ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.movie-trivia li {
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .home-unique-value,
+  .movie-unique-value {
+    margin: 16px 0;
+    padding: 16px;
+  }
+  
+  .movie-trivia {
+    padding: 16px;
+    margin: 16px 0;
+  }
+}
+
 /* Shared full-page status / error state (moved from Home.css) */
 .page-state {
   min-height: 60vh;
